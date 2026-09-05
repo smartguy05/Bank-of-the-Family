@@ -1,0 +1,33 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: bank-of-the-family:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://botf:${POSTGRES_PASSWORD:-botf}@db:5432/botf
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: botf
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-botf}
+      POSTGRES_DB: botf
+    volumes:
+      - botf-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botf -d botf"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  botf-pgdata:

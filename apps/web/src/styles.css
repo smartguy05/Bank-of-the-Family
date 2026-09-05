@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+/* Design tokens: a calm, trustworthy "real bank" palette. Feature agents use these, not raw hex. */
+@theme {
+  --color-brand-900: #0b1f3a;
+  --color-brand-800: #12305a;
+  --color-brand-700: #1a437c;
+  --color-brand-600: #22579f;
+  --color-brand-500: #2f6fc4;
+  --color-brand-100: #e3ecf8;
+  --color-brand-50: #f2f6fc;
+  --color-accent-600: #0f8f7a;
+  --color-accent-500: #14a58c;
+  --color-accent-100: #d9f3ec;
+  --color-surface: #f5f7fb;
+  --color-card: #ffffff;
+  --color-ink: #10203a;
+  --color-muted: #5b6b85;
+  --color-line: #dfe5ef;
+  --color-positive: #15803d;
+  --color-negative: #b91c1c;
+  --color-warning: #b45309;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius-card: 1rem;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}

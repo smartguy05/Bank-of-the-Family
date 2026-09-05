@@ -1,0 +1,8 @@
+**/node_modules
+**/dist
+**/dev-dist
+.git
+apps/android
+**/.env
+**/.env.*
+!**/.env.example

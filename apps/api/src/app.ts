@@ -1,0 +1,137 @@
+import cookie from "@fastify/cookie";
+import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
+import session from "@fastify/session";
+import fastifyStatic from "@fastify/static";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
+import Fastify, { type FastifyInstance } from "fastify";
+import {
+  hasZodFastifySchemaValidationErrors,
+  isResponseSerializationError,
+  jsonSchemaTransform,
+  serializerCompiler,
+  validatorCompiler,
+  type ZodTypeProvider,
+} from "fastify-type-provider-zod";
+import fs from "node:fs";
+import path from "node:path";
+import type { Config } from "./config";
+import type { Db } from "./db";
+import { AppError } from "./lib/errors";
+import { createPgSessionStore } from "./plugins/session-store";
+import { registerRoutes } from "./routes";
+
+export type App = FastifyInstance;
+
+export interface BuildAppOptions {
+  config: Config;
+  db: Db;
+}
+
+export async function buildApp({ config, db }: BuildAppOptions): Promise<App> {
+  const app = Fastify({
+    logger: config.isTest
+      ? false
+      : {
+          level: config.LOG_LEVEL,
+          ...(config.isProd ? {} : { transport: { target: "pino-pretty" } }),
+        },
+    trustProxy: true,
+  }).withTypeProvider<ZodTypeProvider>();
+
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+  app.decorate("config", config);
+  app.decorate("db", db);
+
+  await app.register(cors, {
+    origin: config.isProd ? false : [config.APP_URL, /^http:\/\/localhost:\d+$/],
+    credentials: true,
+  });
+  await app.register(cookie);
+  const ttlMs = config.SESSION_TTL_DAYS_PARENT * 24 * 60 * 60 * 1000;
+  await app.register(session, {
+    secret: config.SESSION_SECRET,
+    cookieName: "botf_session",
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: config.isProd ? true : "auto",
+      path: "/",
+      maxAge: ttlMs,
+    },
+    saveUninitialized: false,
+    rolling: true,
+    store: createPgSessionStore(db, ttlMs),
+  });
+  await app.register(rateLimit, { global: false });
+
+  await app.register(swagger, {
+    openapi: {
+      info: { title: "Bank of the Family API", version: "0.1.0" },
+      components: {
+        securitySchemes: {
+          cookieAuth: { type: "apiKey", in: "cookie", name: "botf_session" },
+        },
+      },
+    },
+    transform: jsonSchemaTransform,
+  });
+  await app.register(swaggerUi, { routePrefix: "/api/docs" });
+
+  app.setErrorHandler((err, req, reply) => {
+    if (err instanceof AppError) {
+      return reply.status(err.statusCode).send({
+        statusCode: err.statusCode,
+        error: err.code,
+        message: err.message,
+        code: err.code,
+      });
+    }
+    if (hasZodFastifySchemaValidationErrors(err)) {
+      return reply.status(400).send({
+        statusCode: 400,
+        error: "VALIDATION",
+        code: "VALIDATION",
+        message: err.validation.map((v) => `${v.instancePath || "body"} ${v.message}`).join("; "),
+      });
+    }
+    if (isResponseSerializationError(err)) {
+      req.log.error({ err }, "response serialization failed");
+      return reply.status(500).send({
+        statusCode: 500,
+        error: "SERIALIZATION",
+        code: "SERIALIZATION",
+        message: "Response did not match schema",
+      });
+    }
+    const e = err as { statusCode?: number; code?: string; message?: string };
+    const statusCode = e.statusCode ?? 500;
+    if (statusCode >= 500) req.log.error({ err }, "unhandled error");
+    return reply.status(statusCode).send({
+      statusCode,
+      error: e.code ?? "INTERNAL",
+      code: e.code ?? "INTERNAL",
+      message: statusCode >= 500 && config.isProd ? "Internal error" : (e.message ?? "Error"),
+    });
+  });
+
+  await app.register(registerRoutes, { prefix: "/api" });
+
+  // Serve the built web app (production). SPA fallback for non-API routes.
+  const webDir = config.WEB_DIST_DIR ?? path.resolve(process.cwd(), "../web/dist");
+  if (fs.existsSync(path.join(webDir, "index.html"))) {
+    await app.register(fastifyStatic, { root: webDir, prefix: "/", wildcard: false });
+    app.setNotFoundHandler((req, reply) => {
+      if (req.url.startsWith("/api/") || req.method !== "GET") {
+        return reply
+          .status(404)
+          .send({ statusCode: 404, error: "NOT_FOUND", code: "NOT_FOUND", message: "Not found" });
+      }
+      return reply.sendFile("index.html");
+    });
+  }
+
+  return app;
+}
