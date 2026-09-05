@@ -37,3 +37,18 @@ body {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+@keyframes slideUp {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+::selection {
+  background: var(--color-accent-100);
+}
