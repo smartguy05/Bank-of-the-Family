@@ -13,7 +13,10 @@ test.describe("Bank of the Family smoke", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/onboarding/);
     await page.getByLabel(/family name/i).fill("Smoke Family");
-    await page.getByRole("button", { name: /create|continue|get started/i }).first().click();
+    await page
+      .getByRole("button", { name: /create|continue|get started/i })
+      .first()
+      .click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByText(/total/i).first()).toBeVisible();
 
@@ -22,13 +25,19 @@ test.describe("Bank of the Family smoke", () => {
     const checking = child.accounts.find((a) => a.type === "checking")!;
     await page.goto(`/children/${child.user.id}`);
     await expect(page.getByText("Riley").first()).toBeVisible();
-    await page.getByRole("button", { name: /^deposit$/i }).first().click();
+    await page
+      .getByRole("button", { name: /^deposit$/i })
+      .first()
+      .click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await dialog.getByLabel(/amount/i).fill("12.50");
     const memo = dialog.getByLabel(/memo/i);
     if (await memo.count()) await memo.fill("Weekly allowance");
-    await dialog.getByRole("button", { name: /deposit/i }).last().click();
+    await dialog
+      .getByRole("button", { name: /deposit/i })
+      .last()
+      .click();
     await expect(dialog).toBeHidden({ timeout: 10_000 });
     await expect(page.getByText("$12.50").first()).toBeVisible();
 
@@ -41,11 +50,17 @@ test.describe("Bank of the Family smoke", () => {
 
     // --- Kid: ask for money ---
     await page.goto("/requests");
-    await page.getByRole("button", { name: /ask for money|new request/i }).first().click();
+    await page
+      .getByRole("button", { name: /ask for money|new request/i })
+      .first()
+      .click();
     const reqDialog = page.getByRole("dialog");
     await reqDialog.getByLabel(/amount/i).fill("5");
     await reqDialog.getByLabel(/reason|what for/i).fill("Ice cream");
-    await reqDialog.getByRole("button", { name: /send|submit|ask/i }).last().click();
+    await reqDialog
+      .getByRole("button", { name: /send|submit|ask/i })
+      .last()
+      .click();
     await expect(reqDialog).toBeHidden({ timeout: 10_000 });
     await expect(page.getByText("Ice cream")).toBeVisible();
 
@@ -54,10 +69,16 @@ test.describe("Bank of the Family smoke", () => {
     await devLoginAs(page.request, parentSub, "Jordan");
     await page.goto("/requests");
     await expect(page.getByText("Ice cream")).toBeVisible();
-    await page.getByRole("button", { name: /approve/i }).first().click();
+    await page
+      .getByRole("button", { name: /approve/i })
+      .first()
+      .click();
     const decide = page.getByRole("dialog");
     if (await decide.isVisible()) {
-      await decide.getByRole("button", { name: /approve/i }).last().click();
+      await decide
+        .getByRole("button", { name: /approve/i })
+        .last()
+        .click();
       await expect(decide).toBeHidden({ timeout: 10_000 });
     }
     await page.goto("/");

@@ -3,6 +3,8 @@ import { sql } from "drizzle-orm";
 import type { App } from "../app";
 import type { Db } from "../db";
 import { purgeExpiredSessions } from "../plugins/session-store";
+import { postDueAllowances } from "./allowance";
+import { postMonthlyInterest } from "./interest";
 
 /** Arbitrary constant so only one process/instance runs due jobs at a time. */
 const SCHEDULER_LOCK_KEY = 727001;
@@ -10,10 +12,6 @@ const SCHEDULER_LOCK_KEY = 727001;
 /**
  * Runs all due background work, guarded by a Postgres advisory lock so multiple API instances
  * (or overlapping runs) never do the same work twice.
- *
- * Extension points for future scheduled work (not yet implemented):
- *   - jobs/allowance.ts — post due entries from `allowanceSchedules`.
- *   - jobs/interest.ts  — post monthly interest on savings accounts.
  */
 export async function runDueJobs(db: Db): Promise<void> {
   const result = await db.execute(
@@ -23,6 +21,9 @@ export async function runDueJobs(db: Db): Promise<void> {
   if (!locked) return;
   try {
     await purgeExpiredSessions(db);
+    const now = new Date();
+    await postDueAllowances(db, now);
+    await postMonthlyInterest(db, now);
   } finally {
     await db.execute(sql`select pg_advisory_unlock(${SCHEDULER_LOCK_KEY})`);
   }

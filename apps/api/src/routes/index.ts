@@ -1,10 +1,15 @@
 import type { FastifyPluginAsync } from "fastify";
 import { accountsRoutes } from "./accounts";
+import { allowancesRoutes } from "./allowances";
 import { authRoutes } from "./auth";
 import { childrenRoutes } from "./children";
 import { dashboardRoutes } from "./dashboard";
 import { familiesRoutes } from "./families";
+import { goalsRoutes } from "./goals";
 import { healthRoutes } from "./health";
+import { notificationsRoutes } from "./notifications";
+import { requestsRoutes } from "./requests";
+import { statementsRoutes } from "./statements";
 import { transactionsRoutes } from "./transactions";
 
 /**
@@ -19,4 +24,9 @@ export const registerRoutes: FastifyPluginAsync = async (app) => {
   await app.register(accountsRoutes);
   await app.register(transactionsRoutes);
   await app.register(dashboardRoutes);
+  await app.register(allowancesRoutes);
+  await app.register(goalsRoutes);
+  await app.register(requestsRoutes);
+  await app.register(notificationsRoutes);
+  await app.register(statementsRoutes);
 };

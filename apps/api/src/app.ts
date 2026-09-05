@@ -22,6 +22,7 @@ import { AppError } from "./lib/errors";
 import { authPlugin } from "./plugins/auth";
 import { createPgSessionStore } from "./plugins/session-store";
 import { registerRoutes } from "./routes";
+import { configurePush } from "./services/push";
 
 export type App = FastifyInstance;
 
@@ -45,6 +46,7 @@ export async function buildApp({ config, db }: BuildAppOptions): Promise<App> {
   app.setSerializerCompiler(serializerCompiler);
   app.decorate("config", config);
   app.decorate("db", db);
+  configurePush(config);
 
   // Several body schemas have every field optional (e.g. createInviteBody, updateAccountBody).
   // A client that has nothing to send may omit the body entirely; treat that the same as `{}`
@@ -99,6 +101,24 @@ export async function buildApp({ config, db }: BuildAppOptions): Promise<App> {
   await app.register(swaggerUi, { routePrefix: "/api/docs" });
 
   await app.register(authPlugin);
+
+  // Android TWA asset-link verification. Lives outside /api (and outside auth) because Chrome
+  // fetches it unauthenticated from the app's public origin root.
+  app.get("/.well-known/assetlinks.json", async (_request, reply) => {
+    const fingerprints = config.APP_ASSETLINKS_FINGERPRINTS.split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return reply.type("application/json").send([
+      {
+        relation: ["delegate_permission/common.handle_all_urls"],
+        target: {
+          namespace: "android_app",
+          package_name: config.ANDROID_PACKAGE_NAME,
+          sha256_cert_fingerprints: fingerprints,
+        },
+      },
+    ]);
+  });
 
   app.setErrorHandler((err, req, reply) => {
     if (err instanceof AppError) {

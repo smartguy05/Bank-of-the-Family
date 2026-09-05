@@ -4,7 +4,7 @@ import type {
   TransactionKind,
   TransactionListQuery,
 } from "@botf/shared";
-import { CREDIT_KINDS, DEBIT_KINDS } from "@botf/shared";
+import { CREDIT_KINDS, DEBIT_KINDS, formatMoney } from "@botf/shared";
 import { and, desc, eq, gte, inArray, lt, lte, or } from "drizzle-orm";
 import type { Db, Tx } from "../db";
 import { accounts, families, transactions, users } from "../db/schema";
@@ -89,7 +89,12 @@ async function insertEntry(
       .where(eq(families.id, input.familyId))
       .limit(1);
     if (!family?.allowOverdraft) {
-      throw conflict("INSUFFICIENT_FUNDS", `Insufficient funds: ${account.balanceMinor} available`);
+      const available = formatMoney(
+        account.balanceMinor,
+        family?.currencyCode ?? "USD",
+        family?.locale ?? "en-US",
+      );
+      throw conflict("INSUFFICIENT_FUNDS", `Insufficient funds: ${available} available`);
     }
   }
 
@@ -148,6 +153,8 @@ export interface DepositOrChargeInput {
   memo?: string;
   createdByUserId: string | null;
   idempotencyKey?: string;
+  /** Backdates the entry (e.g. demo seed history). Defaults to now. */
+  postedAt?: Date;
 }
 
 export async function deposit(
@@ -172,6 +179,8 @@ export interface TransferInput {
   memo?: string;
   createdByUserId: string | null;
   idempotencyKey?: string;
+  /** Backdates both legs (e.g. demo seed history). Defaults to now. */
+  postedAt?: Date;
 }
 
 export interface TransferResultRows {
@@ -204,6 +213,7 @@ export async function transfer(db: Db, input: TransferInput): Promise<TransferRe
       memo: input.memo ?? "",
       createdByUserId: input.createdByUserId,
       idempotencyKey: outKey,
+      postedAt: input.postedAt,
     });
     const inn = await insertEntry(tx, {
       familyId: input.familyId,
@@ -215,6 +225,7 @@ export async function transfer(db: Db, input: TransferInput): Promise<TransferRe
       createdByUserId: input.createdByUserId,
       relatedTransactionId: out.id,
       idempotencyKey: inKey,
+      postedAt: input.postedAt,
     });
     const [updatedOut] = await tx
       .update(transactions)
@@ -409,6 +420,15 @@ export async function toTransactionDto(
 ): Promise<TransactionDto> {
   const extras = await resolveTransactionExtras(db, [row]);
   return buildTransactionDto(row, extras.get(row.id)!);
+}
+
+/** Batch version of `toTransactionDto` — one round trip for extras instead of one per row. */
+export async function toTransactionDtos(
+  db: Db | Tx,
+  rows: (typeof transactions.$inferSelect)[],
+): Promise<TransactionDto[]> {
+  const extras = await resolveTransactionExtras(db, rows);
+  return rows.map((r) => buildTransactionDto(r, extras.get(r.id)!));
 }
 
 export interface ListTransactionsParams extends TransactionListQuery {
