@@ -43,10 +43,16 @@ export const rootRoute = createRootRouteWithContext<RouterContext>()({
   notFoundComponent: NotFoundPage,
 });
 
+/**
+ * Resolves the signed-in principal for route guards. `fetchQuery` (not `ensureQueryData`) so that
+ * an invalidated "me" (after creating a family, accepting an invite, logging in) is refetched
+ * instead of served stale, while a fresh one within staleTime is reused without a request.
+ */
 async function fetchMe(queryClient: QueryClient): Promise<Me> {
-  return queryClient.ensureQueryData({
+  return queryClient.fetchQuery({
     queryKey: queryKeys.me(),
     queryFn: () => api.get<Me>("/auth/me"),
+    staleTime: 15_000,
   });
 }
 

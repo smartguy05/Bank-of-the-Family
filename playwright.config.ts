@@ -1,6 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
+import fs from "node:fs";
 
 const PORT = 3100;
+// Some environments pre-install Chromium outside Playwright's cache; honour it when present.
+const preinstalledChromium = process.env.PW_CHROMIUM_PATH ?? "/opt/pw-browsers/chromium";
+const launchOptions = fs.existsSync(preinstalledChromium)
+  ? { executablePath: preinstalledChromium }
+  : undefined;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -13,6 +19,7 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    ...(launchOptions ? { launchOptions } : {}),
   },
   projects: [
     { name: "mobile", use: { ...devices["Pixel 7"] } },

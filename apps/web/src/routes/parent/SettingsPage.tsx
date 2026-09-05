@@ -21,14 +21,7 @@ import { useToast } from "@/components/ui/Toast";
 import { CURRENCIES } from "@/lib/locales";
 import { useFamily, useFamilyParents, useUpdateFamily } from "@/hooks/useFamily";
 import { useCreateInvite, useDeleteInvite, useInvites } from "@/hooks/useInvites";
-
-const timezones = (() => {
-  try {
-    return Intl.supportedValuesOf("timeZone");
-  } catch {
-    return ["UTC"];
-  }
-})();
+import { timezonesWith } from "@/lib/timezones";
 
 const inviteSchema = z.object({
   inviteeName: z.string().max(80).optional(),
@@ -97,7 +90,7 @@ function FamilyForm() {
           </div>
           <Field label="Timezone" htmlFor="timezone">
             <Select id="timezone" {...register("timezone")}>
-              {timezones.map((tz) => (
+              {timezonesWith(family?.timezone).map((tz) => (
                 <option key={tz} value={tz}>
                   {tz}
                 </option>

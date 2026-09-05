@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { CreateFamilyBody, Family, UpdateFamilyBody, User } from "@botf/shared";
+import type { Me, CreateFamilyBody, Family, UpdateFamilyBody, User } from "@botf/shared";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/queryKeys";
 
@@ -23,9 +23,10 @@ export function useCreateFamily() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateFamilyBody) => api.post<Family>("/families", body),
-    onSuccess: (family) => {
+    onSuccess: async (family) => {
       qc.setQueryData(queryKeys.family(), family);
-      void qc.invalidateQueries({ queryKey: queryKeys.me() });
+      qc.setQueryData<Me>(queryKeys.me(), (old) => (old ? { ...old, family } : old));
+      await qc.invalidateQueries({ queryKey: queryKeys.me() });
     },
   });
 }

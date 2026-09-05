@@ -15,10 +15,13 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r --workspace-concurrency=1 test",
     "db:generate": "pnpm --filter @botf/api db:generate",
-    "db:migrate": "pnpm --filter @botf/api db:migrate"
+    "db:migrate": "pnpm --filter @botf/api db:migrate",
+    "e2e": "playwright test",
+    "e2e:mobile": "playwright test --project=mobile"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
+    "@playwright/test": "^1.63.0",
     "eslint": "^9.39.0",
     "eslint-config-prettier": "^10.1.0",
     "eslint-plugin-react-hooks": "^7.0.0",

@@ -22,7 +22,10 @@ export function AskForMoneyDialog({
   const { parse, fmt } = useFamilyFormat();
   const toast = useToast();
   const createRequest = useCreateRequest();
-  const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
+  // The dialog stays mounted while accounts load, so derive the effective account from the
+  // user's explicit choice with a fallback to the first account instead of freezing it at mount.
+  const [chosenAccountId, setAccountId] = useState("");
+  const accountId = chosenAccountId || accounts[0]?.id || "";
   const [raw, setRaw] = useState("");
   const [reason, setReason] = useState("");
   const [amountError, setAmountError] = useState<string | null>(null);

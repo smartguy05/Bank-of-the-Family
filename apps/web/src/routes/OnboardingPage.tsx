@@ -13,17 +13,10 @@ import { Select } from "@/components/ui/Select";
 import { useCreateFamily } from "@/hooks/useFamily";
 import { useToast } from "@/components/ui/Toast";
 import { CURRENCIES } from "@/lib/locales";
+import { browserTimezone, timezones } from "@/lib/timezones";
 
 type FormInput = z.input<typeof createFamilyBody>;
 
-const timezones = (() => {
-  try {
-    return Intl.supportedValuesOf("timeZone");
-  } catch {
-    return ["UTC"];
-  }
-})();
-const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const browserLocale = navigator.language || "en-US";
 
 const LOCALES = [
@@ -59,7 +52,7 @@ export function OnboardingPage() {
       name: "",
       currencyCode: "USD",
       locale: LOCALES.includes(browserLocale) ? browserLocale : "en-US",
-      timezone: timezones.includes(browserTimezone) ? browserTimezone : "UTC",
+      timezone: browserTimezone,
     },
   });
 

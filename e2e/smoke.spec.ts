@@ -46,7 +46,7 @@ test.describe("Bank of the Family smoke", () => {
     await kidLogin(page, username, pin);
     await expect(page.getByText("$12.50").first()).toBeVisible();
     await page.goto(`/accounts/${checking.id}`);
-    await expect(page.getByText(/weekly allowance|deposit/i).first()).toBeVisible();
+    await expect(page.getByText("Weekly allowance").first()).toBeVisible();
 
     // --- Kid: ask for money ---
     await page.goto("/requests");
@@ -56,7 +56,7 @@ test.describe("Bank of the Family smoke", () => {
       .click();
     const reqDialog = page.getByRole("dialog");
     await reqDialog.getByLabel(/amount/i).fill("5");
-    await reqDialog.getByLabel(/reason|what for/i).fill("Ice cream");
+    await reqDialog.getByLabel(/what.?s it for|reason/i).fill("Ice cream");
     await reqDialog
       .getByRole("button", { name: /send|submit|ask/i })
       .last()

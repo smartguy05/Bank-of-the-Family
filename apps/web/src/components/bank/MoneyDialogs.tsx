@@ -48,7 +48,8 @@ function AccountOption({ account }: { account: Account }) {
 }
 
 export function DepositDialog({ open, onClose, accounts, defaultAccountId }: BaseProps) {
-  const [accountId, setAccountId] = useState(defaultAccountId ?? accounts[0]?.id ?? "");
+  const [chosenAccountId, setAccountId] = useState("");
+  const accountId = chosenAccountId || defaultAccountId || accounts[0]?.id || "";
   const [category, setCategory] = useState<TransactionCategory>("allowance");
   const [memo, setMemo] = useState("");
   const amount = useAmountField();
@@ -127,7 +128,8 @@ export function DepositDialog({ open, onClose, accounts, defaultAccountId }: Bas
 }
 
 export function ChargeDialog({ open, onClose, accounts, defaultAccountId }: BaseProps) {
-  const [accountId, setAccountId] = useState(defaultAccountId ?? accounts[0]?.id ?? "");
+  const [chosenAccountId, setAccountId] = useState("");
+  const accountId = chosenAccountId || defaultAccountId || accounts[0]?.id || "";
   const [category, setCategory] = useState<TransactionCategory>("purchase");
   const [memo, setMemo] = useState("");
   const amount = useAmountField();
@@ -206,10 +208,10 @@ export function ChargeDialog({ open, onClose, accounts, defaultAccountId }: Base
 }
 
 export function TransferDialog({ open, onClose, accounts, defaultAccountId }: BaseProps) {
-  const [fromAccountId, setFromAccountId] = useState(defaultAccountId ?? accounts[0]?.id ?? "");
-  const [toAccountId, setToAccountId] = useState(
-    accounts.find((a) => a.id !== (defaultAccountId ?? accounts[0]?.id))?.id ?? "",
-  );
+  const [chosenFrom, setFromAccountId] = useState("");
+  const [chosenTo, setToAccountId] = useState("");
+  const fromAccountId = chosenFrom || defaultAccountId || accounts[0]?.id || "";
+  const toAccountId = chosenTo || accounts.find((a) => a.id !== fromAccountId)?.id || "";
   const [memo, setMemo] = useState("");
   const amount = useAmountField();
   const transfer = useTransfer();
