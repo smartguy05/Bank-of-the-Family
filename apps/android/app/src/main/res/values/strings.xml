@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  app_name, launcherName and asset_statements are generated at build time by app/build.gradle
+  (resValue), sourced from gradle.properties (twaName / twaLauncherName / twaHost) — that keeps the
+  app's name and its digital-asset-links statement in the one place you already edit to repoint the
+  app. They are intentionally not duplicated here; see app/build.gradle if you need to inspect the
+  generated values (build/generated/res/resValues/... after a build).
+-->
+<resources>
+    <string name="manageSpaceActivityLabel" translatable="false">Bank of the Family storage</string>
+</resources>

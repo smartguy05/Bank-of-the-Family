@@ -15,3 +15,7 @@ apps/android/build
 apps/android/.gradle
 apps/android/*.keystore
 apps/android/*.jks
+apps/android/local.properties
+apps/android/gradlew
+apps/android/gradlew.bat
+apps/android/gradle/wrapper/gradle-wrapper.jar

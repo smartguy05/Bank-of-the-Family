@@ -8,11 +8,28 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgres://botf:${POSTGRES_PASSWORD:-botf}@db:5432/botf
+    # Published directly on the host. If you put this behind Traefik (see the commented `labels:`
+    # block below) you can remove this `ports:` mapping entirely — Traefik reaches the container over
+    # the compose network instead, and nothing needs to bind the host's :3000 at all.
     ports:
       - "${APP_PORT:-3000}:3000"
     depends_on:
       db:
         condition: service_healthy
+    # Uncomment to publish through Traefik instead of (or in addition to) the `ports:` mapping above.
+    # Requires an external Docker network named `traefik` that your Traefik instance also joins, and
+    # a Traefik entrypoint named `websecure` with TLS configured (e.g. via a certResolver). Traefik
+    # forwards X-Forwarded-Proto/-For automatically, which the app needs to issue secure cookies
+    # correctly — see docs/deploy.md.
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.botf.rule=Host(`bank.example.com`)"
+    #   - "traefik.http.routers.botf.entrypoints=websecure"
+    #   - "traefik.http.routers.botf.tls.certresolver=letsencrypt"
+    #   - "traefik.http.services.botf.loadbalancer.server.port=3000"
+    # networks:
+    #   - default
+    #   - traefik
 
   db:
     image: postgres:16-alpine
@@ -31,3 +48,10 @@ services:
 
 volumes:
   botf-pgdata:
+
+# Uncomment alongside the `app.labels`/`app.networks` block above — declares the external network
+# your Traefik instance is already attached to (create it once with `docker network create traefik`,
+# or reuse whatever network your existing Traefik compose file/stack defines).
+# networks:
+#   traefik:
+#     external: true

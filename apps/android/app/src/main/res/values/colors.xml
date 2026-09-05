@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Static brand colors, matching apps/web/vite.config.ts VitePWA manifest (theme_color /
+  background_color #0b1f3a) and the icons generated from apps/web/public/icons. These rarely
+  change, so — unlike twaHost/twaPackage/twaName in gradle.properties — they are plain resources
+  here rather than generated ones. If you rebrand, update this file AND apps/web/vite.config.ts AND
+  gradle.properties (twaThemeColor/twaBackgroundColor/…) together.
+-->
+<resources>
+    <color name="colorPrimary">#0b1f3a</color>
+    <color name="colorPrimaryDark">#071629</color>
+    <color name="navigationColor">#0b1f3a</color>
+    <color name="navigationColorDark">#0b1f3a</color>
+    <color name="backgroundColor">#0b1f3a</color>
+    <color name="ic_launcher_background">#0b1f3a</color>
+</resources>

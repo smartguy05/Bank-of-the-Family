@@ -1,0 +1,106 @@
+plugins {
+    id "com.android.application"
+}
+
+// Signing: keep secrets out of this repo. Provide them via environment variables (CI) or
+// ~/.gradle/gradle.properties (local machine) — see docs/android-build.md. No signingConfig is
+// applied when they are absent, so `assembleDebug` always works; `assembleRelease`/`bundleRelease`
+// will fail with a clear "signing config not found" error until you set these.
+def releaseStoreFile = findProperty("RELEASE_STORE_FILE") ?: System.getenv("RELEASE_STORE_FILE")
+def releaseStorePassword = findProperty("RELEASE_STORE_PASSWORD") ?: System.getenv("RELEASE_STORE_PASSWORD")
+def releaseKeyAlias = findProperty("RELEASE_KEY_ALIAS") ?: System.getenv("RELEASE_KEY_ALIAS")
+def releaseKeyPassword = findProperty("RELEASE_KEY_PASSWORD") ?: System.getenv("RELEASE_KEY_PASSWORD")
+
+android {
+    namespace project.property("twaPackage")
+    compileSdk 35
+
+    defaultConfig {
+        applicationId project.property("twaPackage")
+        minSdk 24
+        targetSdk 35
+        versionCode project.property("twaVersionCode").toInteger()
+        versionName project.property("twaVersionName")
+
+        // ── Everything below is derived from gradle.properties (twaHost / twaPackage / twaName /
+        // twaLauncherName / …). Edit gradle.properties, not this file, to rebrand or repoint the app. ──
+
+        manifestPlaceholders = [
+            hostName    : project.property("twaHost"),
+            defaultUrl  : "https://" + project.property("twaHost") + project.property("twaLaunchUrl"),
+            fallbackType: project.property("twaFallbackType"),
+        ]
+
+        resValue "string", "app_name", project.property("twaName")
+        resValue "string", "launcherName", project.property("twaLauncherName")
+        resValue "bool", "enableNotification", "true"
+
+        // Digital Asset Links statement this *app* makes about the *website* it trusts. Chrome checks
+        // this against the statement the *website* serves at /.well-known/assetlinks.json (listing this
+        // app's package name + signing certificate fingerprint) before hiding the browser UI. Both
+        // sides must agree for the TWA to run without an address bar — see docs/android-build.md.
+        resValue "string", "asset_statements",
+            "[{\n" +
+            "  \\\"relation\\\": [\\\"delegate_permission/common.handle_all_urls\\\"],\n" +
+            "  \\\"target\\\": {\n" +
+            "    \\\"namespace\\\": \\\"web\\\",\n" +
+            "    \\\"site\\\": \\\"https://" + project.property("twaHost") + "\\\"\n" +
+            "  }\n" +
+            "}]"
+    }
+
+    signingConfigs {
+        if (releaseStoreFile) {
+            release {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (releaseStoreFile) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+        }
+        debug {
+            // Signed with the auto-generated debug keystore. Digital Asset Links verification will
+            // NOT pass with a debug build (its signing fingerprint isn't the one you put in
+            // APP_ASSETLINKS_FINGERPRINTS) — that's expected, see docs/android-build.md. It still
+            // launches and shows the site fine, just with the browser address bar visible.
+        }
+    }
+
+    packagingOptions {
+        exclude "META-INF/DEPENDENCIES"
+        exclude "META-INF/LICENSE"
+        exclude "META-INF/LICENSE.txt"
+        exclude "META-INF/NOTICE"
+        exclude "META-INF/NOTICE.txt"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        // twaHost/twaPackage default to placeholder values; don't fail CI builds on them.
+        disable "MissingApplicationIcon"
+        abortOnError false
+    }
+}
+
+dependencies {
+    // Provides LauncherActivity, DelegationService and the rest of the TWA/notification-delegation
+    // plumbing — this is the whole app, no custom Activity/Service code is needed.
+    implementation "com.google.androidbrowserhelper:androidbrowserhelper:2.6.0"
+    // Theme.AppCompat.* parents used by values/styles.xml.
+    implementation "androidx.appcompat:appcompat:1.7.0"
+}

@@ -1,0 +1,46 @@
+{
+  "packageId": "family.bank.app",
+  "host": "bank.example.com",
+  "name": "Bank of the Family",
+  "launcherName": "Family Bank",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#0b1f3a",
+  "themeColorDark": "#0b1f3a",
+  "navigationColor": "#0b1f3a",
+  "navigationColorDark": "#0b1f3a",
+  "navigationDividerColor": "#0b1f3a",
+  "navigationDividerColorDark": "#0b1f3a",
+  "backgroundColor": "#0b1f3a",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://bank.example.com/icons/icon-512.png",
+  "maskableIconUrl": "https://bank.example.com/icons/icon-512-maskable.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "cli",
+  "webManifestUrl": "https://bank.example.com/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://bank.example.com/",
+  "minSdkVersion": 24,
+  "targetSdkVersion": 35,
+  "compileSdkVersion": 35,
+  "protocolVersion": 2
+}
