@@ -2,6 +2,7 @@ import { buildApp } from "./app";
 import { loadConfig } from "./config";
 import { createDb } from "./db";
 import { runMigrations } from "./db/migrate";
+import { startScheduler } from "./jobs";
 
 async function main() {
   const config = loadConfig();
@@ -21,6 +22,7 @@ async function main() {
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
   await app.listen({ port: config.PORT, host: config.HOST });
+  startScheduler(app);
 }
 
 main().catch((err) => {

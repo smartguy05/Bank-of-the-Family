@@ -29,6 +29,11 @@ const envSchema = z.object({
     .string()
     .default("true")
     .transform((v) => v !== "false" && v !== "0"),
+  /** Enables POST /api/auth/dev/login (parent upsert without OIDC). Always on in tests. */
+  DEV_LOGIN_ENABLED: z
+    .string()
+    .default("false")
+    .transform((v) => v === "true" || v === "1"),
 });
 
 export type Config = z.infer<typeof envSchema> & {

@@ -1,6 +1,7 @@
 import "fastify";
 import type { Config } from "./config";
 import type { Db } from "./db";
+import type { Family, User } from "./db/schema";
 
 /** Data stored in the server-side session. */
 export interface SessionData {
@@ -21,5 +22,11 @@ declare module "fastify" {
   interface FastifyInstance {
     config: Config;
     db: Db;
+  }
+  interface FastifyRequest {
+    /** The signed-in user for this request, loaded from `session.userId`. Null if not signed in. */
+    currentUser: User | null;
+    /** The current user's family, loaded when `currentUser.familyId` is set. */
+    family: Family | null;
   }
 }

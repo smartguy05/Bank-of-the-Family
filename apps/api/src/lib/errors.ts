@@ -16,3 +16,4 @@ export const unauthorized = (message = "Sign in required") =>
 export const forbidden = (message = "Not allowed") => new AppError(403, "FORBIDDEN", message);
 export const notFound = (what = "Resource") => new AppError(404, "NOT_FOUND", `${what} not found`);
 export const conflict = (code: string, message: string) => new AppError(409, code, message);
+export const gone = (code: string, message: string) => new AppError(410, code, message);

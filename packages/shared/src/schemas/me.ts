@@ -10,3 +10,10 @@ export const meSchema = z.object({
   pendingInviteCode: z.string().nullable(),
 });
 export type Me = z.infer<typeof meSchema>;
+
+/** Response for POST /auth/logout. `redirectTo` is Authentik's RP-initiated logout URL, when applicable. */
+export const logoutResponse = z.object({
+  ok: z.literal(true),
+  redirectTo: z.string().nullable(),
+});
+export type LogoutResponse = z.infer<typeof logoutResponse>;

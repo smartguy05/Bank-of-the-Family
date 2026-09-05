@@ -69,3 +69,10 @@ export const registerViaInviteBody = z.object({
   password: z.string().min(8).max(200),
 });
 export type RegisterViaInviteBody = z.infer<typeof registerViaInviteBody>;
+
+/** Response for POST /invites/:code/register: where to send the invitee to finish signing in. */
+export const registerViaInviteResponse = z.object({
+  ok: z.literal(true),
+  loginUrl: z.string(),
+});
+export type RegisterViaInviteResponse = z.infer<typeof registerViaInviteResponse>;

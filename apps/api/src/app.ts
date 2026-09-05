@@ -19,6 +19,7 @@ import path from "node:path";
 import type { Config } from "./config";
 import type { Db } from "./db";
 import { AppError } from "./lib/errors";
+import { authPlugin } from "./plugins/auth";
 import { createPgSessionStore } from "./plugins/session-store";
 import { registerRoutes } from "./routes";
 
@@ -44,6 +45,23 @@ export async function buildApp({ config, db }: BuildAppOptions): Promise<App> {
   app.setSerializerCompiler(serializerCompiler);
   app.decorate("config", config);
   app.decorate("db", db);
+
+  // Several body schemas have every field optional (e.g. createInviteBody, updateAccountBody).
+  // A client that has nothing to send may omit the body entirely; treat that the same as `{}`
+  // rather than `undefined`, which the zod object schemas would otherwise reject.
+  app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
+    const raw = body as string;
+    if (!raw) return done(null, {});
+    try {
+      done(null, JSON.parse(raw));
+    } catch (err) {
+      done(err as Error, undefined);
+    }
+  });
+  // Same idea when the client sends no body (and so no Content-Type) at all.
+  app.addHook("preValidation", async (request) => {
+    if (request.body === undefined) request.body = {};
+  });
 
   await app.register(cors, {
     origin: config.isProd ? false : [config.APP_URL, /^http:\/\/localhost:\d+$/],
@@ -79,6 +97,8 @@ export async function buildApp({ config, db }: BuildAppOptions): Promise<App> {
     transform: jsonSchemaTransform,
   });
   await app.register(swaggerUi, { routePrefix: "/api/docs" });
+
+  await app.register(authPlugin);
 
   app.setErrorHandler((err, req, reply) => {
     if (err instanceof AppError) {
