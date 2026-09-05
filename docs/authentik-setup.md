@@ -12,16 +12,16 @@ Directory → Groups → **Create**: name `bank-parents`. Add every parent to it
 
 Applications → Providers → **Create** → OAuth2/OpenID Provider:
 
-| Setting | Value |
-|---|---|
-| Name | Bank of the Family |
-| Authorization flow | your default implicit-consent flow (e.g. `default-provider-authorization-implicit-consent`) |
-| Client type | Confidential |
-| Redirect URIs | `https://bank.example.com/api/auth/oidc/callback` (strict) |
-| Signing key | any RS256 key |
-| Scopes | `openid`, `email`, `profile`, and the **groups** scope mapping (`authentik default OAuth Mapping: OpenID 'profile'` already includes `groups`; if not, add the `goauthentik.io/providers/oauth2/scope-profile` mapping or a custom one that returns `groups`) |
-| Subject mode | Based on the User's hashed ID (default) |
-| Include claims in id_token | on |
+| Setting                    | Value                                                                                                                                                                                                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name                       | Bank of the Family                                                                                                                                                                                                                                            |
+| Authorization flow         | your default implicit-consent flow (e.g. `default-provider-authorization-implicit-consent`)                                                                                                                                                                   |
+| Client type                | Confidential                                                                                                                                                                                                                                                  |
+| Redirect URIs              | `https://bank.example.com/api/auth/oidc/callback` (strict)                                                                                                                                                                                                    |
+| Signing key                | any RS256 key                                                                                                                                                                                                                                                 |
+| Scopes                     | `openid`, `email`, `profile`, and the **groups** scope mapping (`authentik default OAuth Mapping: OpenID 'profile'` already includes `groups`; if not, add the `goauthentik.io/providers/oauth2/scope-profile` mapping or a custom one that returns `groups`) |
+| Subject mode               | Based on the User's hashed ID (default)                                                                                                                                                                                                                       |
+| Include claims in id_token | on                                                                                                                                                                                                                                                            |
 
 Then Applications → **Create**: name `Bank of the Family`, slug `bank-of-the-family`, provider = the one
 above, launch URL `https://bank.example.com`.

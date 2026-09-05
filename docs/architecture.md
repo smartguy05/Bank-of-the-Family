@@ -20,13 +20,13 @@ deposit and charge, kids watch balances grow, earn interest, save toward goals, 
 
 ## Packages
 
-| Path | What |
-|---|---|
+| Path              | What                                                                          |
+| ----------------- | ----------------------------------------------------------------------------- |
 | `packages/shared` | The API contract: Zod schemas, enums, money helpers. Imported by API and web. |
-| `apps/api` | Fastify 5 + Drizzle ORM on Postgres. Serves the built web app in production. |
-| `apps/web` | React 19 PWA (Vite, Tailwind v4, TanStack Router/Query). |
-| `apps/android` | Bubblewrap Trusted Web Activity wrapping the PWA. |
-| `deploy` | Dockerfile, docker-compose, env template. |
+| `apps/api`        | Fastify 5 + Drizzle ORM on Postgres. Serves the built web app in production.  |
+| `apps/web`        | React 19 PWA (Vite, Tailwind v4, TanStack Router/Query).                      |
+| `apps/android`    | Bubblewrap Trusted Web Activity wrapping the PWA.                             |
+| `deploy`          | Dockerfile, docker-compose, env template.                                     |
 
 ## Identity
 
