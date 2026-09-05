@@ -37,3 +37,15 @@ export function useChangePin() {
     mutationFn: (body: ChangePinBody) => api.post<{ ok: true }>("/auth/child/pin", body),
   });
 }
+
+/** Dev-only shortcut sign-in. The API only enables this route outside production. */
+export function useDevLogin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { authentikSub: string; displayName: string }) =>
+      api.post<Me>("/auth/dev/login", body),
+    onSuccess: (me) => {
+      qc.setQueryData(queryKeys.me(), me);
+    },
+  });
+}

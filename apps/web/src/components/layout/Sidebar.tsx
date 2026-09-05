@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 export function Sidebar({ items, familyName }: { items: NavItem[]; familyName?: string }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-card sm:flex">
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-card sm:flex print:hidden">
       <div className="flex items-center gap-2 px-5 py-5">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-900 text-white">
           <Landmark size={18} />

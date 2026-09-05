@@ -1,17 +1,30 @@
+import dayjs from "dayjs";
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Inbox, Users } from "lucide-react";
+import { CalendarClock, ChevronRight, Inbox, Users } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
+import { Money } from "@/components/ui/Money";
 import { TotalBalanceCard } from "@/components/bank/TotalBalanceCard";
 import { ChildCard } from "@/components/bank/ChildCard";
 import { TransactionList } from "@/components/bank/TransactionList";
 import { useParentDashboard } from "@/hooks/useDashboard";
+import { useAllowances } from "@/hooks/useAllowances";
 
 export function ParentDashboard() {
   const { data, isLoading } = useParentDashboard();
+  const { data: allowances } = useAllowances();
+
+  const accountOwner = new Map<string, string>();
+  for (const child of data?.children ?? []) {
+    for (const acc of child.accounts) accountOwner.set(acc.id, child.user.displayName);
+  }
+  const upcomingAllowances = (allowances ?? [])
+    .filter((a) => a.active)
+    .sort((a, b) => dayjs(a.nextRunAt).diff(dayjs(b.nextRunAt)))
+    .slice(0, 4);
 
   return (
     <div>
@@ -69,6 +82,34 @@ export function ParentDashboard() {
               </div>
             )}
           </div>
+
+          {upcomingAllowances.length > 0 && (
+            <div>
+              <h2 className="mb-2 text-sm font-semibold text-ink">Upcoming allowances</h2>
+              <Card>
+                <CardBody className="flex flex-col divide-y divide-line px-4 py-1">
+                  {upcomingAllowances.map((a) => (
+                    <div key={a.id} className="flex items-center gap-3 py-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-800">
+                        <CalendarClock size={16} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-ink">
+                          {accountOwner.get(a.accountId) ?? "Account"}
+                        </p>
+                        <p className="text-xs text-muted">
+                          {dayjs(a.nextRunAt).format("MMM D, YYYY")}
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-sm font-semibold tabular text-ink">
+                        <Money minor={a.amountMinor} />
+                      </p>
+                    </div>
+                  ))}
+                </CardBody>
+              </Card>
+            </div>
+          )}
 
           <div>
             <h2 className="mb-2 text-sm font-semibold text-ink">Recent activity</h2>

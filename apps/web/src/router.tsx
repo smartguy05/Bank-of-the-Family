@@ -146,9 +146,12 @@ const accountsIndexRoute = createRoute({
   component: AccountsPage,
 });
 
+const accountDetailSearchSchema = z.object({ tx: z.string().optional() });
+
 export const accountDetailRoute = createRoute({
   getParentRoute: () => authedRoute,
   path: "/accounts/$accountId",
+  validateSearch: accountDetailSearchSchema,
   component: AccountDetailPage,
 });
 

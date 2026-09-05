@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
-import { LogOut } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Bell, ChevronRight, LogOut } from "lucide-react";
 import { pinSchema } from "@botf/shared";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
@@ -129,6 +130,19 @@ export function ProfilePage() {
             </Badge>
           </div>
         </CardBody>
+      </Card>
+
+      <Card>
+        <Link
+          to="/notifications"
+          className="flex items-center gap-3 px-5 py-4 hover:bg-surface rounded-card"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-brand-800">
+            <Bell size={18} />
+          </div>
+          <p className="flex-1 font-medium text-ink">Notifications</p>
+          <ChevronRight size={18} className="text-muted" />
+        </Link>
       </Card>
 
       {isChild && <ChangePinCard />}

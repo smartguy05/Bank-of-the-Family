@@ -1,19 +1,28 @@
-import { useState } from "react";
-import { CalendarClock, KeyRound, PenSquare, PiggyBank, Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Inbox, KeyRound, PenSquare, Plus, Target } from "lucide-react";
 import { childDetailRoute } from "@/router";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
-import { Card, CardBody } from "@/components/ui/Card";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Avatar } from "@/components/ui/Avatar";
 import { Money } from "@/components/ui/Money";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { AccountTile } from "@/components/bank/AccountTile";
 import { DepositDialog, ChargeDialog, TransferDialog } from "@/components/bank/MoneyDialogs";
 import { EditChildDialog } from "@/components/bank/EditChildDialog";
 import { ResetPinDialog } from "@/components/bank/ResetPinDialog";
 import { AddAccountDialog } from "@/components/bank/AddAccountDialog";
+import { AllowanceSection } from "@/components/bank/AllowanceSection";
+import { InterestCard } from "@/components/bank/InterestCard";
+import { GoalCard } from "@/components/bank/GoalCard";
+import { RequestCard } from "@/components/bank/RequestCard";
+import { DecideRequestDialog } from "@/components/bank/DecideRequestDialog";
 import { useChild } from "@/hooks/useChildren";
 import { useAccounts } from "@/hooks/useAccounts";
+import { useGoals } from "@/hooks/useGoals";
+import { useRequests } from "@/hooks/useRequests";
+import type { MoneyRequest } from "@botf/shared";
 
 type DialogKind = "deposit" | "charge" | "transfer" | "edit" | "resetPin" | "addAccount" | null;
 
@@ -21,7 +30,25 @@ export function ChildDetailPage() {
   const { childId } = childDetailRoute.useParams();
   const { data: child, isLoading } = useChild(childId);
   const { data: allAccounts } = useAccounts();
+  const { data: goals, isLoading: goalsLoading } = useGoals();
+  const pendingRequestsQuery = useRequests("pending");
   const [dialog, setDialog] = useState<DialogKind>(null);
+  const [decision, setDecision] = useState<{
+    request: MoneyRequest;
+    action: "approve" | "decline";
+  } | null>(null);
+
+  const childGoals = useMemo(
+    () => (goals ?? []).filter((g) => child?.accounts.some((a) => a.id === g.accountId)),
+    [goals, child],
+  );
+  const childPendingRequests = useMemo(
+    () =>
+      (pendingRequestsQuery.data?.pages.flatMap((p) => p.items) ?? []).filter(
+        (r) => r.requesterUserId === childId,
+      ),
+    [pendingRequestsQuery.data, childId],
+  );
 
   if (isLoading || !child) {
     return (
@@ -33,6 +60,7 @@ export function ChildDetailPage() {
   }
 
   const familyAccounts = allAccounts ?? child.accounts;
+  const savingsAccounts = child.accounts.filter((a) => a.type === "savings");
 
   return (
     <div>
@@ -103,34 +131,84 @@ export function ChildDetailPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="mt-6">
+        <AllowanceSection accounts={child.accounts} />
+      </div>
+
+      {savingsAccounts.length > 0 && (
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {savingsAccounts.map((a) => (
+            <InterestCard key={a.id} account={a} />
+          ))}
+        </div>
+      )}
+
+      <div className="mt-6">
         <Card>
-          <CardBody className="flex items-start gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-brand-800">
-              <CalendarClock size={18} />
-            </div>
-            <div>
-              <p className="font-medium text-ink">Allowance</p>
-              <p className="text-sm text-muted">
-                Scheduled allowances are coming in a future update.
-              </p>
-            </div>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="flex items-start gap-3">
+          <CardHeader className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-100 text-accent-600">
-              <PiggyBank size={18} />
+              <Target size={18} />
             </div>
-            <div>
-              <p className="font-medium text-ink">Interest</p>
-              <p className="text-sm text-muted">
-                Automatic monthly interest posting is coming in a future update.
-              </p>
-            </div>
+            <h2 className="font-semibold text-ink">Goals</h2>
+          </CardHeader>
+          <CardBody>
+            {goalsLoading ? (
+              <Skeleton className="h-24 w-full" />
+            ) : childGoals.length === 0 ? (
+              <EmptyState
+                title="No goals yet"
+                description={`${child.user.displayName} hasn't started a savings goal.`}
+              />
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {childGoals.map((g) => (
+                  <GoalCard
+                    key={g.id}
+                    goal={g}
+                    account={child.accounts.find((a) => a.id === g.accountId)}
+                    editable={false}
+                  />
+                ))}
+              </div>
+            )}
           </CardBody>
         </Card>
       </div>
+
+      <div className="mt-6">
+        <Card>
+          <CardHeader className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-warning/10 text-warning">
+              <Inbox size={18} />
+            </div>
+            <h2 className="font-semibold text-ink">Pending requests</h2>
+          </CardHeader>
+          <CardBody className="px-4 py-1">
+            {pendingRequestsQuery.isLoading ? (
+              <Skeleton className="h-16 w-full" />
+            ) : childPendingRequests.length === 0 ? (
+              <EmptyState title="Nothing pending" />
+            ) : (
+              <div className="divide-y divide-line">
+                {childPendingRequests.map((r) => (
+                  <RequestCard
+                    key={r.id}
+                    request={r}
+                    onApprove={(req) => setDecision({ request: req, action: "approve" })}
+                    onDecline={(req) => setDecision({ request: req, action: "decline" })}
+                  />
+                ))}
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      </div>
+
+      <DecideRequestDialog
+        request={decision?.request ?? null}
+        action={decision?.action ?? "approve"}
+        onClose={() => setDecision(null)}
+      />
 
       <DepositDialog
         open={dialog === "deposit"}

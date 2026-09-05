@@ -2,7 +2,8 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import dayjs from "dayjs";
-import { Copy, Plus, Trash2 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Bell, ChevronRight, Copy, Plus, Trash2 } from "lucide-react";
 import { updateFamilyBody } from "@botf/shared";
 import type { UpdateFamilyBody } from "@botf/shared";
 import { z } from "zod";
@@ -249,6 +250,26 @@ function InvitesSection() {
   );
 }
 
+function NotificationsShortcut() {
+  return (
+    <Card>
+      <Link
+        to="/notifications"
+        className="flex items-center gap-3 px-5 py-4 hover:bg-surface rounded-card"
+      >
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-brand-800">
+          <Bell size={18} />
+        </div>
+        <div className="flex-1">
+          <p className="font-medium text-ink">Notifications</p>
+          <p className="text-sm text-muted">Manage alerts and push notifications</p>
+        </div>
+        <ChevronRight size={18} className="text-muted" />
+      </Link>
+    </Card>
+  );
+}
+
 export function SettingsPage() {
   return (
     <div className="flex flex-col gap-5">
@@ -256,6 +277,7 @@ export function SettingsPage() {
       <FamilyForm />
       <ParentsList />
       <InvitesSection />
+      <NotificationsShortcut />
     </div>
   );
 }

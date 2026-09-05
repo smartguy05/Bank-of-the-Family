@@ -16,4 +16,12 @@ export const queryKeys = {
   dashboardParent: () => ["dashboard", "parent"] as const,
   dashboardChild: () => ["dashboard", "child"] as const,
   transaction: (id: string) => ["transactions", id] as const,
+  allowances: (accountId?: string) => ["allowances", accountId ?? "all"] as const,
+  goals: (accountId?: string) => ["goals", accountId ?? "all"] as const,
+  requests: (status?: string) => ["requests", status ?? "all"] as const,
+  notifications: (unreadOnly?: boolean) => ["notifications", unreadOnly ?? false] as const,
+  notificationsUnreadCount: () => ["notifications", "unread-count"] as const,
+  statementPeriods: (accountId: string) => ["accounts", accountId, "statements"] as const,
+  statement: (accountId: string, period: string) =>
+    ["accounts", accountId, "statements", period] as const,
 };

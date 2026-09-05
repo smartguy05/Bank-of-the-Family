@@ -11,7 +11,8 @@ import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { PinInput } from "@/components/ui/PinInput";
 import { ApiError } from "@/lib/api";
-import { useChildLogin } from "@/hooks/useMe";
+import { useChildLogin, useDevLogin } from "@/hooks/useMe";
+import { useToast } from "@/components/ui/Toast";
 
 const childLoginSchema = z.object({ username: usernameSchema, pin: pinSchema });
 type ChildLoginForm = z.infer<typeof childLoginSchema>;
@@ -21,7 +22,18 @@ export function LoginPage() {
   const search = useSearch({ from: "/login" });
   const navigate = useNavigate();
   const childLogin = useChildLogin();
+  const devLogin = useDevLogin();
+  const toast = useToast();
   const [lockedMessage, setLockedMessage] = useState<string | null>(null);
+
+  async function handleDevLogin() {
+    try {
+      await devLogin.mutateAsync({ authentikSub: "dev:demo-parent", displayName: "Demo Parent" });
+      await navigate({ to: "/" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Developer sign-in failed");
+    }
+  }
 
   const {
     register,
@@ -154,6 +166,19 @@ export function LoginPage() {
           <Lock size={14} />
           <span>256-bit encrypted connection</span>
         </div>
+
+        {import.meta.env.DEV && (
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() => void handleDevLogin()}
+              disabled={devLogin.isPending}
+              className="text-xs text-muted underline underline-offset-2 hover:text-ink disabled:opacity-50"
+            >
+              Developer sign-in
+            </button>
+          </div>
+        )}
       </div>
     </main>
   );

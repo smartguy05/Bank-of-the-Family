@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeftRight, Filter } from "lucide-react";
 import { accountDetailRoute } from "@/router";
 import type { Transaction, TransactionCategory, TransactionKind } from "@botf/shared";
@@ -18,11 +19,13 @@ import { TransactionList } from "@/components/bank/TransactionList";
 import { TransactionReceipt } from "@/components/bank/TransactionReceipt";
 import { TransferDialog } from "@/components/bank/MoneyDialogs";
 import { useAccount, useAccounts } from "@/hooks/useAccounts";
-import { useAccountTransactions } from "@/hooks/useTransactions";
+import { useAccountTransactions, useTransaction } from "@/hooks/useTransactions";
 import { useMe } from "@/hooks/useMe";
 
 export function AccountDetailPage() {
   const { accountId } = accountDetailRoute.useParams();
+  const search = accountDetailRoute.useSearch();
+  const navigate = useNavigate();
   const { data: me } = useMe();
   const { data: account, isLoading } = useAccount(accountId);
   const { data: allAccounts } = useAccounts();
@@ -30,6 +33,7 @@ export function AccountDetailPage() {
   const [category, setCategory] = useState<TransactionCategory | "">("");
   const [selected, setSelected] = useState<Transaction | null>(null);
   const [transferOpen, setTransferOpen] = useState(false);
+  const { data: linkedTransaction } = useTransaction(search.tx);
 
   const filters = useMemo(
     () => ({ kind: kind || undefined, category: category || undefined }),
@@ -112,8 +116,12 @@ export function AccountDetailPage() {
       </Card>
 
       <TransactionReceipt
-        transaction={selected}
-        onClose={() => setSelected(null)}
+        transaction={selected ?? (search.tx ? (linkedTransaction ?? null) : null)}
+        onClose={() => {
+          setSelected(null);
+          if (search.tx)
+            void navigate({ to: "/accounts/$accountId", params: { accountId }, search: {} });
+        }}
         canReverse={isParent}
       />
       <TransferDialog
