@@ -85,6 +85,32 @@ export async function getAccountOr404(
   return row;
 }
 
+/**
+ * Resolves an owner's default receiving account (earliest checking account, or their earliest
+ * account of any type) without exposing their full account list. Used to resolve a peer-to-peer
+ * send/request recipient by user id instead of by account id.
+ */
+export async function getDefaultAccountForOwner(
+  db: Db | Tx,
+  ownerUserId: string,
+  familyId: string,
+): Promise<typeof accounts.$inferSelect> {
+  const [row] = await db
+    .select()
+    .from(accounts)
+    .where(
+      and(
+        eq(accounts.ownerUserId, ownerUserId),
+        eq(accounts.familyId, familyId),
+        eq(accounts.status, "open"),
+      ),
+    )
+    .orderBy(...accountOrder)
+    .limit(1);
+  if (!row) throw notFound("Recipient account");
+  return row;
+}
+
 export async function getAccountDto(db: Db, id: string, familyId: string): Promise<AccountDto> {
   const row = await getAccountOr404(db, id, familyId);
   const earmarked = await earmarkedByAccount(db, [row.id]);

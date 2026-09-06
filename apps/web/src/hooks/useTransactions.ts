@@ -3,6 +3,7 @@ import type {
   ChargeBody,
   DepositBody,
   ReverseBody,
+  SendMoneyBody,
   Transaction,
   TransactionListQuery,
   TransferBody,
@@ -73,6 +74,14 @@ export function useTransfer() {
   const invalidate = useInvalidateAfterMoneyMove();
   return useMutation({
     mutationFn: (body: TransferBody) => api.post<TransferResult>("/transactions/transfer", body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSendMoney() {
+  const invalidate = useInvalidateAfterMoneyMove();
+  return useMutation({
+    mutationFn: (body: SendMoneyBody) => api.post<TransferResult>("/transactions/send", body),
     onSuccess: invalidate,
   });
 }

@@ -4,12 +4,13 @@ import type {
   Family as FamilyDto,
   FamilyInvite as FamilyInviteDto,
   InvitePreview,
+  PeerSummary,
   RegisterViaInviteBody,
   RegisterViaInviteResponse,
   UpdateFamilyBody,
   User as UserDto,
 } from "@botf/shared";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import type { Config } from "../config";
 import type { Db } from "../db";
@@ -112,6 +113,34 @@ export async function listParents(db: Db, familyId: string): Promise<UserDto[]> 
     .from(users)
     .where(and(eq(users.familyId, familyId), eq(users.role, "parent")));
   return rows.map(toUserDto);
+}
+
+/**
+ * Family members a child may send money to or request money from: active children only, since
+ * parents never own an account (see `createAccount`/`createChild`) and so can't be a valid
+ * send/request target. Deliberately a slim DTO — no username/isActive/familyId leaked to siblings.
+ */
+export async function listPeers(
+  db: Db,
+  familyId: string,
+  excludeUserId: string,
+): Promise<PeerSummary[]> {
+  return db
+    .select({
+      id: users.id,
+      displayName: users.displayName,
+      avatarColor: users.avatarColor,
+      avatarEmoji: users.avatarEmoji,
+    })
+    .from(users)
+    .where(
+      and(
+        eq(users.familyId, familyId),
+        eq(users.role, "child"),
+        eq(users.isActive, true),
+        ne(users.id, excludeUserId),
+      ),
+    );
 }
 
 export async function listInvites(db: Db, familyId: string): Promise<FamilyInviteDto[]> {

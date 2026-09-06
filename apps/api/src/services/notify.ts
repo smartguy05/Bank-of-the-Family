@@ -35,10 +35,14 @@ function pushUrlFor(type: NotificationType, data: Record<string, unknown>): stri
     case "allowance":
     case "interest":
     case "transfer":
+    case "peer_transfer":
       return typeof data.accountId === "string" ? `/accounts/${data.accountId}` : "/notifications";
     case "request_submitted":
     case "request_approved":
     case "request_declined":
+    case "peer_request_received":
+    case "peer_request_approved":
+    case "peer_request_declined":
       return "/requests";
     case "goal_reached":
       return "/goals";

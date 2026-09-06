@@ -6,6 +6,7 @@ export * from "./transaction";
 export * from "./allowance";
 export * from "./goal";
 export * from "./request";
+export * from "./peerRequest";
 export * from "./notification";
 export * from "./statement";
 export * from "./dashboard";

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
-import { useFamilyFormat } from "@/hooks/useFamilyFormat";
+import { useAmountField } from "@/hooks/useAmountField";
 import { useToast } from "@/components/ui/Toast";
 import { useCharge, useDeposit, useTransfer } from "@/hooks/useTransactions";
 
@@ -16,27 +16,6 @@ interface BaseProps {
   onClose: () => void;
   accounts: Account[];
   defaultAccountId?: string;
-}
-
-function useAmountField() {
-  const [raw, setRaw] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const { parse } = useFamilyFormat();
-  return {
-    raw,
-    setRaw,
-    error,
-    setError,
-    resolve(): number | null {
-      const minor = parse(raw);
-      if (minor === null || minor <= 0) {
-        setError("Enter a valid amount greater than zero");
-        return null;
-      }
-      setError(null);
-      return minor;
-    },
-  };
 }
 
 function AccountOption({ account }: { account: Account }) {
