@@ -231,6 +231,49 @@ export const moneyRequests = pgTable(
   (t) => [index("requests_family_status_idx").on(t.familyId, t.status)],
 );
 
+export const peerRequests = pgTable(
+  "peer_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    familyId: uuid("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    /** Who wants to receive the money. */
+    requesterUserId: uuid("requester_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Requester's own account the money should land in. */
+    requesterAccountId: uuid("requester_account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    /** Who is being asked to pay. */
+    payerUserId: uuid("payer_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Chosen by the payer at approval time, never set at creation. */
+    payerAccountId: uuid("payer_account_id").references(() => accounts.id, {
+      onDelete: "set null",
+    }),
+    amountMinor: bigint("amount_minor", { mode: "number" }).notNull(),
+    reason: text("reason").notNull(),
+    status: requestStatusEnum("status").notNull().default("pending"),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    decisionNote: text("decision_note"),
+    payerTransactionId: uuid("payer_transaction_id").references(() => transactions.id, {
+      onDelete: "set null",
+    }),
+    requesterTransactionId: uuid("requester_transaction_id").references(() => transactions.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("peer_requests_family_status_idx").on(t.familyId, t.status),
+    index("peer_requests_payer_idx").on(t.payerUserId, t.status),
+    index("peer_requests_requester_idx").on(t.requesterUserId, t.status),
+  ],
+);
+
 export const notifications = pgTable(
   "notifications",
   {
@@ -300,6 +343,7 @@ export type Transaction = typeof transactions.$inferSelect;
 export type AllowanceSchedule = typeof allowanceSchedules.$inferSelect;
 export type SavingsGoal = typeof savingsGoals.$inferSelect;
 export type MoneyRequest = typeof moneyRequests.$inferSelect;
+export type PeerRequest = typeof peerRequests.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type FamilyInvite = typeof familyInvites.$inferSelect;

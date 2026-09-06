@@ -75,6 +75,10 @@ export const NOTIFICATION_TYPES = [
   "request_submitted",
   "request_approved",
   "request_declined",
+  "peer_transfer",
+  "peer_request_received",
+  "peer_request_approved",
+  "peer_request_declined",
   "pin_reset",
   "system",
 ] as const;

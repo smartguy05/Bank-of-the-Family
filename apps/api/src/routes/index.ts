@@ -8,6 +8,7 @@ import { familiesRoutes } from "./families";
 import { goalsRoutes } from "./goals";
 import { healthRoutes } from "./health";
 import { notificationsRoutes } from "./notifications";
+import { peerRequestsRoutes } from "./peerRequests";
 import { requestsRoutes } from "./requests";
 import { statementsRoutes } from "./statements";
 import { transactionsRoutes } from "./transactions";
@@ -27,6 +28,7 @@ export const registerRoutes: FastifyPluginAsync = async (app) => {
   await app.register(allowancesRoutes);
   await app.register(goalsRoutes);
   await app.register(requestsRoutes);
+  await app.register(peerRequestsRoutes);
   await app.register(notificationsRoutes);
   await app.register(statementsRoutes);
 };

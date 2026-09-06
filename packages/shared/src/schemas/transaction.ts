@@ -52,6 +52,16 @@ export const transferBody = z.object({
 });
 export type TransferBody = z.infer<typeof transferBody>;
 
+/** Peer-to-peer send: the recipient is chosen by user, not by account. */
+export const sendMoneyBody = z.object({
+  toUserId: idSchema,
+  fromAccountId: idSchema,
+  amountMinor: positiveAmountMinor,
+  memo: memoSchema.default(""),
+  idempotencyKey: z.string().max(100).optional(),
+});
+export type SendMoneyBody = z.infer<typeof sendMoneyBody>;
+
 export const reverseBody = z.object({
   transactionId: idSchema,
   memo: memoSchema.default(""),

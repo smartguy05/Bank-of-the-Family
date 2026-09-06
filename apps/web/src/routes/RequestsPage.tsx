@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Inbox, Send } from "lucide-react";
-import type { MoneyRequest } from "@botf/shared";
+import type { MoneyRequest, PeerRequest } from "@botf/shared";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -11,7 +11,12 @@ import { useToast } from "@/components/ui/Toast";
 import { RequestCard } from "@/components/bank/RequestCard";
 import { AskForMoneyDialog } from "@/components/bank/AskForMoneyDialog";
 import { DecideRequestDialog } from "@/components/bank/DecideRequestDialog";
+import { PeerRequestCard } from "@/components/bank/PeerRequestCard";
+import { SendMoneyDialog } from "@/components/bank/SendMoneyDialog";
+import { RequestFromSiblingDialog } from "@/components/bank/RequestFromSiblingDialog";
+import { DecidePeerRequestDialog } from "@/components/bank/DecidePeerRequestDialog";
 import { useCancelRequest, useRequests } from "@/hooks/useRequests";
+import { useCancelPeerRequest, usePeerRequests } from "@/hooks/usePeerRequests";
 import { useAccounts } from "@/hooks/useAccounts";
 import { useMe } from "@/hooks/useMe";
 
@@ -97,7 +102,7 @@ function ParentRequests() {
   );
 }
 
-function KidRequests() {
+function ParentAskRequests() {
   const { data: accounts } = useAccounts();
   const requestsQuery = useRequests();
   const cancelRequest = useCancelRequest();
@@ -124,15 +129,11 @@ function KidRequests() {
 
   return (
     <div>
-      <PageHeader
-        title="Requests"
-        subtitle="Ask a parent for money"
-        actions={
-          <Button size="sm" icon={<Send size={16} />} onClick={() => setAsking(true)}>
-            Ask for money
-          </Button>
-        }
-      />
+      <div className="mb-3 flex justify-end">
+        <Button size="sm" icon={<Send size={16} />} onClick={() => setAsking(true)}>
+          Ask for money
+        </Button>
+      </div>
       <Card>
         <CardBody className="px-4 py-1">
           {requestsQuery.isLoading ? (
@@ -175,6 +176,126 @@ function KidRequests() {
       </Card>
 
       <AskForMoneyDialog open={asking} onClose={() => setAsking(false)} accounts={accounts ?? []} />
+    </div>
+  );
+}
+
+function FamilyRequests() {
+  const { data: me } = useMe();
+  const { data: accounts } = useAccounts();
+  const requestsQuery = usePeerRequests();
+  const cancelPeerRequest = useCancelPeerRequest();
+  const toast = useToast();
+  const [sending, setSending] = useState(false);
+  const [asking, setAsking] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [decision, setDecision] = useState<{
+    request: PeerRequest;
+    action: "approve" | "decline";
+  } | null>(null);
+
+  const items = useMemo(
+    () => requestsQuery.data?.pages.flatMap((p) => p.items) ?? [],
+    [requestsQuery.data],
+  );
+
+  async function handleCancel(request: PeerRequest) {
+    setCancellingId(request.id);
+    try {
+      await cancelPeerRequest.mutateAsync(request.id);
+      toast.info("Request cancelled");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not cancel request");
+    } finally {
+      setCancellingId(null);
+    }
+  }
+
+  return (
+    <div>
+      <div className="mb-3 flex justify-end gap-2">
+        <Button size="sm" variant="secondary" onClick={() => setAsking(true)}>
+          Request from a sibling
+        </Button>
+        <Button size="sm" icon={<Send size={16} />} onClick={() => setSending(true)}>
+          Send money
+        </Button>
+      </div>
+      <Card>
+        <CardBody className="px-4 py-1">
+          {requestsQuery.isLoading ? (
+            <div className="space-y-3 py-4">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : items.length === 0 ? (
+            <EmptyState
+              icon={<Inbox size={28} />}
+              title="No sibling requests yet"
+              description="Send money to a sibling or ask them for some."
+            />
+          ) : (
+            <div className="divide-y divide-line">
+              {items.map((r) => (
+                <PeerRequestCard
+                  key={r.id}
+                  request={r}
+                  meUserId={me?.user.id ?? ""}
+                  onApprove={(req) => setDecision({ request: req, action: "approve" })}
+                  onDecline={(req) => setDecision({ request: req, action: "decline" })}
+                  onCancel={(req) => void handleCancel(req)}
+                  cancelling={cancellingId === r.id}
+                />
+              ))}
+            </div>
+          )}
+          {requestsQuery.hasNextPage && (
+            <div className="flex justify-center py-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={requestsQuery.isFetchingNextPage}
+                onClick={() => void requestsQuery.fetchNextPage()}
+              >
+                Load more
+              </Button>
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
+      <SendMoneyDialog open={sending} onClose={() => setSending(false)} accounts={accounts ?? []} />
+      <RequestFromSiblingDialog
+        open={asking}
+        onClose={() => setAsking(false)}
+        accounts={accounts ?? []}
+      />
+      <DecidePeerRequestDialog
+        request={decision?.request ?? null}
+        action={decision?.action ?? "approve"}
+        accounts={accounts ?? []}
+        onClose={() => setDecision(null)}
+      />
+    </div>
+  );
+}
+
+function KidRequests() {
+  const [tab, setTab] = useState<"parent" | "family">("parent");
+
+  return (
+    <div>
+      <PageHeader title="Requests" subtitle="Ask a parent, or send and request money with family" />
+      <Tabs
+        className="mb-2"
+        value={tab}
+        onChange={(v) => setTab(v as "parent" | "family")}
+        items={[
+          { value: "parent", label: "Parent" },
+          { value: "family", label: "Family" },
+        ]}
+      />
+      {tab === "parent" ? <ParentAskRequests /> : <FamilyRequests />}
     </div>
   );
 }

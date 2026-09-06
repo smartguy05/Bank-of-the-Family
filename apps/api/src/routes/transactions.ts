@@ -7,6 +7,7 @@ import {
   idSchema,
   paged,
   reverseBody,
+  sendMoneyBody,
   transactionListQuery,
   transactionSchema,
   transferBody,
@@ -17,10 +18,10 @@ import type { FastifyPluginAsync } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import type { App } from "../app";
-import { transactions } from "../db/schema";
-import { forbidden, notFound } from "../lib/errors";
-import { requireParent, requireUser } from "../lib/guards";
-import { getAccountOr404 } from "../services/accounts";
+import { transactions, users } from "../db/schema";
+import { badRequest, forbidden, notFound } from "../lib/errors";
+import { requireChild, requireParent, requireUser } from "../lib/guards";
+import { getAccountOr404, getDefaultAccountForOwner } from "../services/accounts";
 import { audit } from "../services/audit";
 import {
   charge,
@@ -162,12 +163,6 @@ export const transactionsRoutes: FastifyPluginAsync = async (app) => {
       if (!family) throw forbidden("Create or join a family first");
       const fromAccount = await getAccountOr404(app.db, request.body.fromAccountId, family.id);
       const toAccount = await getAccountOr404(app.db, request.body.toAccountId, family.id);
-      if (
-        user.role === "child" &&
-        (fromAccount.ownerUserId !== user.id || toAccount.ownerUserId !== user.id)
-      ) {
-        throw forbidden("Children can only transfer between their own accounts");
-      }
 
       const result = await transfer(app.db, {
         familyId: family.id,
@@ -210,6 +205,76 @@ export const transactionsRoutes: FastifyPluginAsync = async (app) => {
         actorId: user.id,
         type: "transfer",
         title: "Transfer received",
+        category: inn.category,
+        amountMinor: inn.amountMinor,
+        memo: inn.memo,
+        transactionId: inn.id,
+      });
+
+      return { out, in: inn };
+    },
+  );
+
+  r.post(
+    "/transactions/send",
+    {
+      preHandler: [requireChild],
+      schema: { tags: ["transactions"], body: sendMoneyBody, response: { 200: transferResult } },
+    },
+    async (request) => {
+      const user = request.currentUser!;
+      const family = request.family;
+      if (!family) throw forbidden("Create or join a family first");
+      if (request.body.toUserId === user.id) {
+        throw badRequest("SAME_USER", "Cannot send money to yourself");
+      }
+
+      const fromAccount = await getAccountOr404(app.db, request.body.fromAccountId, family.id);
+      if (fromAccount.ownerUserId !== user.id) {
+        throw forbidden("You can only send from your own account");
+      }
+
+      const [recipient] = await app.db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.id, request.body.toUserId),
+            eq(users.familyId, family.id),
+            eq(users.role, "child"),
+            eq(users.isActive, true),
+          ),
+        )
+        .limit(1);
+      if (!recipient) throw notFound("Family member");
+      const toAccount = await getDefaultAccountForOwner(app.db, recipient.id, family.id);
+
+      const result = await transfer(app.db, {
+        familyId: family.id,
+        fromAccountId: fromAccount.id,
+        toAccountId: toAccount.id,
+        amountMinor: request.body.amountMinor,
+        memo: request.body.memo,
+        createdByUserId: user.id,
+        idempotencyKey: request.body.idempotencyKey,
+      });
+      const out = await toTransactionDto(app.db, result.out);
+      const inn = await toTransactionDto(app.db, result.in);
+
+      await audit(app.db, {
+        familyId: family.id,
+        actorUserId: user.id,
+        action: "transaction.send",
+        entity: "transaction",
+        entityId: out.id,
+        data: { toUserId: recipient.id, amountMinor: out.amountMinor },
+      });
+      await notifyAccountOwner(app, {
+        account: toAccount,
+        family,
+        actorId: user.id,
+        type: "peer_transfer",
+        title: `${user.displayName} sent you money`,
         category: inn.category,
         amountMinor: inn.amountMinor,
         memo: inn.memo,

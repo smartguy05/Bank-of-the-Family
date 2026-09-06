@@ -301,7 +301,7 @@ describe("ledger", () => {
     expect(seen.size).toBe(7);
   });
 
-  it("lets a child transfer between their own accounts but not to a sibling's", async () => {
+  it("lets a child transfer between their own accounts and directly to a sibling's account", async () => {
     const cookie = await devLogin(ctx, "ledger-parent-9");
     await createFamily(ctx, cookie);
     const child = await createChild(ctx, cookie, "kid9a");
@@ -333,7 +333,14 @@ describe("ledger", () => {
       headers: { cookie: childCookie },
       payload: { fromAccountId: checking.id, toAccountId: siblingChecking.id, amountMinor: 50 },
     });
-    expect(toSiblingRes.statusCode).toBe(403);
+    expect(toSiblingRes.statusCode).toBe(200);
+
+    const siblingAccountRes = await ctx.app.inject({
+      method: "GET",
+      url: `/api/accounts/${siblingChecking.id}`,
+      headers: { cookie },
+    });
+    expect((siblingAccountRes.json() as Account).balanceMinor).toBe(50);
   });
 
   it("does not let a child deposit", async () => {

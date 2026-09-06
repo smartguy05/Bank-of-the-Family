@@ -6,6 +6,7 @@ import {
   invitePreviewSchema,
   meSchema,
   okResponse,
+  peerSummarySchema,
   registerViaInviteBody,
   registerViaInviteResponse,
   updateFamilyBody,
@@ -29,6 +30,7 @@ import {
   getInvitePreview,
   listInvites,
   listParents,
+  listPeers,
   registerViaInvite,
   toFamilyDto,
   updateFamily,
@@ -96,6 +98,19 @@ export const familiesRoutes: FastifyPluginAsync = async (app) => {
       schema: { tags: ["families"], response: { 200: z.array(userSchema) } },
     },
     async (request) => listParents(app.db, request.family!.id),
+  );
+
+  r.get(
+    "/families/current/peers",
+    {
+      preHandler: [requireUser],
+      schema: { tags: ["families"], response: { 200: z.array(peerSummarySchema) } },
+    },
+    async (request) => {
+      const familyId = request.family?.id;
+      if (!familyId) return [];
+      return listPeers(app.db, familyId, request.currentUser!.id);
+    },
   );
 
   r.get(

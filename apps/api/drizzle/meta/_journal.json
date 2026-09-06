@@ -8,6 +8,13 @@
       "when": 1788640898361,
       "tag": "0000_far_turbo",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788670082231,
+      "tag": "0001_white_vermin",
+      "breakpoints": true
     }
   ]
 }

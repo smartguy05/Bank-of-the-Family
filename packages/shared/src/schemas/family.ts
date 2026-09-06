@@ -76,3 +76,12 @@ export const registerViaInviteResponse = z.object({
   loginUrl: z.string(),
 });
 export type RegisterViaInviteResponse = z.infer<typeof registerViaInviteResponse>;
+
+/** Slim, privacy-safe view of another family member: no username/isActive/familyId. */
+export const peerSummarySchema = z.object({
+  id: idSchema,
+  displayName: z.string(),
+  avatarColor: z.string(),
+  avatarEmoji: z.string().nullable(),
+});
+export type PeerSummary = z.infer<typeof peerSummarySchema>;

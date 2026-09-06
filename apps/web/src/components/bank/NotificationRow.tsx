@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Bell, Gift, Inbox, KeyRound, PiggyBank, Target, Wallet } from "lucide-react";
+import { Bell, Gift, Inbox, KeyRound, PiggyBank, Send, Target, Wallet } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Notification } from "@botf/shared";
 import { cn } from "@/lib/cn";
@@ -14,6 +14,10 @@ const TYPE_ICON: Record<Notification["type"], LucideIcon> = {
   request_submitted: Inbox,
   request_approved: Inbox,
   request_declined: Inbox,
+  peer_transfer: Send,
+  peer_request_received: Inbox,
+  peer_request_approved: Inbox,
+  peer_request_declined: Inbox,
   pin_reset: KeyRound,
   system: Bell,
 };
