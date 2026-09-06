@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import dayjs from "dayjs";
 import { Link } from "@tanstack/react-router";
-import { Bell, ChevronRight, Copy, Plus, Trash2 } from "lucide-react";
+import { Bell, ChevronRight, Copy, LogOut, Plus, Trash2 } from "lucide-react";
 import { updateFamilyBody } from "@botf/shared";
 import type { UpdateFamilyBody } from "@botf/shared";
 import { z } from "zod";
@@ -21,6 +21,7 @@ import { useToast } from "@/components/ui/Toast";
 import { CURRENCIES } from "@/lib/locales";
 import { useFamily, useFamilyParents, useUpdateFamily } from "@/hooks/useFamily";
 import { useCreateInvite, useDeleteInvite, useInvites } from "@/hooks/useInvites";
+import { useLogout } from "@/hooks/useMe";
 import { timezonesWith } from "@/lib/timezones";
 
 const inviteSchema = z.object({
@@ -263,6 +264,22 @@ function NotificationsShortcut() {
   );
 }
 
+function LogoutSection() {
+  const logout = useLogout();
+  return (
+    <div>
+      <Button
+        variant="secondary"
+        icon={<LogOut size={16} />}
+        loading={logout.isPending}
+        onClick={() => logout.mutate()}
+      >
+        Log out
+      </Button>
+    </div>
+  );
+}
+
 export function SettingsPage() {
   return (
     <div className="flex flex-col gap-5">
@@ -271,6 +288,7 @@ export function SettingsPage() {
       <ParentsList />
       <InvitesSection />
       <NotificationsShortcut />
+      <LogoutSection />
     </div>
   );
 }
