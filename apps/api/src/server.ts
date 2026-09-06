@@ -21,8 +21,8 @@ async function main() {
   process.on("SIGINT", () => void shutdown("SIGINT"));
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
-  await app.listen({ port: config.PORT, host: config.HOST });
   startScheduler(app);
+  await app.listen({ port: config.PORT, host: config.HOST });
 }
 
 main().catch((err) => {
