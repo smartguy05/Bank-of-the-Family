@@ -1,6 +1,6 @@
 import type { Account as AccountDto, CreateAccountBody, UpdateAccountBody } from "@botf/shared";
 import { generateAccountNumber } from "@botf/shared";
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql, asc } from "drizzle-orm";
 import type { Db, Tx } from "../db";
 import { accounts, savingsGoals, users } from "../db/schema";
 import { conflict, notFound } from "../lib/errors";
@@ -24,6 +24,9 @@ export function toAccountDto(a: typeof accounts.$inferSelect, earmarkedMinor: nu
 }
 
 /** Batched: money earmarked in each account's open (uncompleted) savings goals. */
+/** Stable listing order: Checking before Savings, then oldest first. Reused wherever accounts are listed. */
+export const accountOrder = [asc(accounts.type), asc(accounts.createdAt)] as const;
+
 export async function earmarkedByAccount(
   db: Db | Tx,
   accountIds: string[],
@@ -43,7 +46,11 @@ export async function earmarkedByAccount(
 }
 
 export async function listAccountsForFamily(db: Db, familyId: string): Promise<AccountDto[]> {
-  const rows = await db.select().from(accounts).where(eq(accounts.familyId, familyId));
+  const rows = await db
+    .select()
+    .from(accounts)
+    .where(eq(accounts.familyId, familyId))
+    .orderBy(...accountOrder);
   const earmarked = await earmarkedByAccount(
     db,
     rows.map((r) => r.id),
@@ -52,7 +59,11 @@ export async function listAccountsForFamily(db: Db, familyId: string): Promise<A
 }
 
 export async function listAccountsForOwner(db: Db, ownerUserId: string): Promise<AccountDto[]> {
-  const rows = await db.select().from(accounts).where(eq(accounts.ownerUserId, ownerUserId));
+  const rows = await db
+    .select()
+    .from(accounts)
+    .where(eq(accounts.ownerUserId, ownerUserId))
+    .orderBy(...accountOrder);
   const earmarked = await earmarkedByAccount(
     db,
     rows.map((r) => r.id),

@@ -13,6 +13,8 @@ export interface TransactionListProps {
   isFetchingNextPage?: boolean;
   onLoadMore?: () => void;
   onSelect?: (transaction: Transaction) => void;
+  /** Map of accountId → label (e.g. "Alex · Checking") for family-wide feeds. */
+  accountLabels?: Record<string, string>;
 }
 
 function dayLabel(iso: string): string {
@@ -29,6 +31,7 @@ export function TransactionList({
   isFetchingNextPage,
   onLoadMore,
   onSelect,
+  accountLabels,
 }: TransactionListProps) {
   if (isLoading) {
     return (
@@ -67,7 +70,12 @@ export function TransactionList({
           </p>
           <div className="divide-y divide-line">
             {group.items.map((t) => (
-              <TransactionRow key={t.id} transaction={t} onClick={onSelect} />
+              <TransactionRow
+                key={t.id}
+                transaction={t}
+                onClick={onSelect}
+                accountLabel={accountLabels?.[t.accountId]}
+              />
             ))}
           </div>
         </div>

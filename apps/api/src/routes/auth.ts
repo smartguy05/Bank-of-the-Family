@@ -160,7 +160,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   r.post(
     "/auth/child/login",
     {
-      config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+      config: { rateLimit: { max: app.config.AUTH_RATE_LIMIT_MAX, timeWindow: "1 minute" } },
       schema: { tags: ["auth"], body: childLoginBody, response: { 200: meSchema } },
     },
     async (request) => {

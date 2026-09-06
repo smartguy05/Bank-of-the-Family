@@ -24,6 +24,8 @@ const envSchema = z.object({
   ANDROID_PACKAGE_NAME: z.string().default("family.bank.app"),
   /** Directory of the built web app to serve at "/" (production). */
   WEB_DIST_DIR: z.string().optional(),
+  /** Max child-login attempts per IP per minute (raise for shared NAT or e2e runs). */
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
   /** Disable the in-process scheduler (tests, or when running a separate worker). */
   SCHEDULER_ENABLED: z
     .string()

@@ -6,7 +6,7 @@ import type { Db, Tx } from "../db";
 import { accounts, users } from "../db/schema";
 import { conflict, notFound } from "../lib/errors";
 import { isUniqueViolation } from "../lib/db-errors";
-import { earmarkedByAccount, toAccountDto } from "./accounts";
+import { accountOrder, earmarkedByAccount, toAccountDto } from "./accounts";
 import { toUserDto } from "./users";
 
 const AVATAR_PALETTE = [
@@ -27,7 +27,11 @@ function pickAvatarColor(seed: string): string {
 }
 
 async function buildChildSummary(db: Db, user: typeof users.$inferSelect): Promise<ChildSummary> {
-  const accts = await db.select().from(accounts).where(eq(accounts.ownerUserId, user.id));
+  const accts = await db
+    .select()
+    .from(accounts)
+    .where(eq(accounts.ownerUserId, user.id))
+    .orderBy(...accountOrder);
   const earmarked = await earmarkedByAccount(
     db,
     accts.map((a) => a.id),

@@ -55,6 +55,7 @@ test.describe("Bank of the Family smoke", () => {
       .first()
       .click();
     const reqDialog = page.getByRole("dialog");
+    await reqDialog.getByLabel(/account/i).selectOption(checking.id);
     await reqDialog.getByLabel(/amount/i).fill("5");
     await reqDialog.getByLabel(/what.?s it for|reason/i).fill("Ice cream");
     await reqDialog

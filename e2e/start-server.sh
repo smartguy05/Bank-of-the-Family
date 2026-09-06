@@ -13,6 +13,7 @@ fi
 [ -f apps/api/dist/server.js ] || pnpm --filter @botf/api build
 pnpm --filter @botf/api db:migrate
 exec env NODE_ENV=development LOG_LEVEL=warn DEV_LOGIN_ENABLED=true SCHEDULER_ENABLED=false \
+  AUTH_RATE_LIMIT_MAX=1000 \
   PORT=3100 APP_URL=http://127.0.0.1:3100 WEB_DIST_DIR="$(pwd)/apps/web/dist" \
   SESSION_SECRET=e2e-session-secret-e2e-session-secret-0000 \
   node apps/api/dist/server.js

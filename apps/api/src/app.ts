@@ -162,13 +162,32 @@ export async function buildApp({ config, db }: BuildAppOptions): Promise<App> {
   // Serve the built web app (production). SPA fallback for non-API routes.
   const webDir = config.WEB_DIST_DIR ?? path.resolve(process.cwd(), "../web/dist");
   if (fs.existsSync(path.join(webDir, "index.html"))) {
-    await app.register(fastifyStatic, { root: webDir, prefix: "/", wildcard: false });
+    // Wildcard serving resolves files per request (a rebuilt bundle with new hashes is picked
+    // up without a restart); missing files fall through to the SPA index below. Hashed assets
+    // are immutable, so they get a long cache lifetime; index.html and the service worker
+    // must always revalidate.
+    await app.register(fastifyStatic, {
+      root: webDir,
+      prefix: "/",
+      setHeaders(res, filePath) {
+        if (/[\\/]assets[\\/]/.test(filePath)) {
+          void res.header("Cache-Control", "public, max-age=31536000, immutable");
+        } else {
+          void res.header("Cache-Control", "no-cache");
+        }
+      },
+    });
     app.setNotFoundHandler((req, reply) => {
       if (req.url.startsWith("/api/") || req.method !== "GET") {
         return reply
           .status(404)
           .send({ statusCode: 404, error: "NOT_FOUND", code: "NOT_FOUND", message: "Not found" });
       }
+      // Requests for missing hashed assets must not receive index.html as JavaScript.
+      if (/\.(js|mjs|css|map|png|svg|ico|woff2?|json|webmanifest)$/.test(req.url)) {
+        return reply.status(404).send("Not found");
+      }
+      reply.header("Cache-Control", "no-cache");
       return reply.sendFile("index.html");
     });
   }

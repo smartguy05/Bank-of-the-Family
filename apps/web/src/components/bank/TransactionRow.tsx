@@ -40,9 +40,11 @@ const KIND_ICON: Partial<Record<Transaction["kind"], LucideIcon>> = {
 export interface TransactionRowProps {
   transaction: Transaction;
   onClick?: (transaction: Transaction) => void;
+  /** Shown before the category, e.g. "Alex · Checking" in family-wide feeds. */
+  accountLabel?: string;
 }
 
-export function TransactionRow({ transaction, onClick }: TransactionRowProps) {
+export function TransactionRow({ transaction, onClick, accountLabel }: TransactionRowProps) {
   const isCredit = CREDIT_KINDS.includes(transaction.kind) || transaction.amountMinor > 0;
   const Icon = KIND_ICON[transaction.kind] ?? CATEGORY_ICON[transaction.category];
   const reversed = Boolean(transaction.reversedByTransactionId);
@@ -78,6 +80,7 @@ export function TransactionRow({ transaction, onClick }: TransactionRowProps) {
           )}
         </div>
         <p className="truncate text-xs text-muted">
+          {accountLabel ? `${accountLabel} · ` : ""}
           {CATEGORY_LABELS[transaction.category]}
           {transaction.counterpartyAccountName
             ? ` · ${transaction.counterpartyAccountName}`

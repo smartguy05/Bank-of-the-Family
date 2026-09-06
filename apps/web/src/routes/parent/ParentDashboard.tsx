@@ -18,8 +18,12 @@ export function ParentDashboard() {
   const { data: allowances } = useAllowances();
 
   const accountOwner = new Map<string, string>();
+  const accountLabels: Record<string, string> = {};
   for (const child of data?.children ?? []) {
-    for (const acc of child.accounts) accountOwner.set(acc.id, child.user.displayName);
+    for (const acc of child.accounts) {
+      accountOwner.set(acc.id, child.user.displayName);
+      accountLabels[acc.id] = `${child.user.displayName} · ${acc.name}`;
+    }
   }
   const upcomingAllowances = (allowances ?? [])
     .filter((a) => a.active)
@@ -47,7 +51,7 @@ export function ParentDashboard() {
                 </div>
                 <p className="flex-1 text-sm font-medium text-ink">
                   {data.pendingRequestCount} pending{" "}
-                  {data.pendingRequestCount === 1 ? "request" : "requests"} need your review
+                  {data.pendingRequestCount === 1 ? "request needs" : "requests need"} your review
                 </p>
                 <ChevronRight size={18} className="text-muted" />
               </Card>
@@ -115,7 +119,10 @@ export function ParentDashboard() {
             <h2 className="mb-2 text-sm font-semibold text-ink">Recent activity</h2>
             <Card>
               <CardBody className="px-2 py-2">
-                <TransactionList transactions={data.recentTransactions} />
+                <TransactionList
+                  transactions={data.recentTransactions}
+                  accountLabels={accountLabels}
+                />
               </CardBody>
             </Card>
           </div>
