@@ -38,6 +38,7 @@ export function TransactionReceipt({ transaction, onClose, canReverse }: Transac
 
   const alreadyReversed = Boolean(transaction.reversedByTransactionId);
   const isReversal = transaction.kind === "reversal";
+  const isWithdrawal = transaction.kind === "withdrawal";
   const reference = transaction.id.slice(0, 8).toUpperCase();
 
   async function handleReverse() {
@@ -85,7 +86,15 @@ export function TransactionReceipt({ transaction, onClose, canReverse }: Transac
         <Row label="Balance after" value={<Money minor={transaction.runningBalanceMinor} />} />
       </div>
 
-      {canReverse && !alreadyReversed && !isReversal && (
+      {canReverse && !alreadyReversed && !isReversal && isWithdrawal && (
+        <div className="mt-4 border-t border-line pt-4">
+          <p className="text-sm text-muted">
+            Withdrawals can&apos;t be reversed. Deposit the money back instead.
+          </p>
+        </div>
+      )}
+
+      {canReverse && !alreadyReversed && !isReversal && !isWithdrawal && (
         <div className="mt-4 border-t border-line pt-4">
           {!confirmingReverse ? (
             <Button variant="danger" size="sm" onClick={() => setConfirmingReverse(true)}>

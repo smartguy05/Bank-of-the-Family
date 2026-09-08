@@ -9,7 +9,12 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Money } from "@/components/ui/Money";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { AccountTile } from "@/components/bank/AccountTile";
-import { DepositDialog, ChargeDialog, TransferDialog } from "@/components/bank/MoneyDialogs";
+import {
+  DepositDialog,
+  ChargeDialog,
+  TransferDialog,
+  WithdrawDialog,
+} from "@/components/bank/MoneyDialogs";
 import { EditChildDialog } from "@/components/bank/EditChildDialog";
 import { ResetPinDialog } from "@/components/bank/ResetPinDialog";
 import { AddAccountDialog } from "@/components/bank/AddAccountDialog";
@@ -24,7 +29,8 @@ import { useGoals } from "@/hooks/useGoals";
 import { useRequests } from "@/hooks/useRequests";
 import type { MoneyRequest } from "@botf/shared";
 
-type DialogKind = "deposit" | "charge" | "transfer" | "edit" | "resetPin" | "addAccount" | null;
+type DialogKind =
+  "deposit" | "withdraw" | "charge" | "transfer" | "edit" | "resetPin" | "addAccount" | null;
 
 export function ChildDetailPage() {
   const { childId } = childDetailRoute.useParams();
@@ -104,6 +110,9 @@ export function ChildDetailPage() {
 
       <div className="mt-5 flex flex-wrap gap-2">
         <Button onClick={() => setDialog("deposit")}>Deposit</Button>
+        <Button variant="secondary" onClick={() => setDialog("withdraw")}>
+          Withdraw
+        </Button>
         <Button variant="secondary" onClick={() => setDialog("charge")}>
           Charge
         </Button>
@@ -215,6 +224,13 @@ export function ChildDetailPage() {
         onClose={() => setDialog(null)}
         accounts={child.accounts}
         defaultAccountId={child.accounts[0]?.id}
+      />
+      <WithdrawDialog
+        open={dialog === "withdraw"}
+        onClose={() => setDialog(null)}
+        accounts={child.accounts}
+        defaultAccountId={child.accounts[0]?.id}
+        ownerName={child.user.displayName.split(" ")[0]}
       />
       <ChargeDialog
         open={dialog === "charge"}

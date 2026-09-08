@@ -1,5 +1,15 @@
 import dayjs from "dayjs";
-import { Bell, Gift, Inbox, KeyRound, PiggyBank, Send, Target, Wallet } from "lucide-react";
+import {
+  Banknote,
+  Bell,
+  Gift,
+  Inbox,
+  KeyRound,
+  PiggyBank,
+  Send,
+  Target,
+  Wallet,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Notification } from "@botf/shared";
 import { cn } from "@/lib/cn";
@@ -7,6 +17,7 @@ import { cn } from "@/lib/cn";
 const TYPE_ICON: Record<Notification["type"], LucideIcon> = {
   deposit: Wallet,
   charge: Gift,
+  withdrawal: Banknote,
   allowance: Wallet,
   interest: PiggyBank,
   transfer: Wallet,

@@ -55,6 +55,19 @@ describe("TransactionRow", () => {
     unmount();
   });
 
+  it("renders a withdrawal as a debit with the Withdrawal category label", () => {
+    const { container, unmount } = renderToDom(
+      <TransactionRow
+        transaction={makeTransaction({ amountMinor: -1500, kind: "withdrawal", category: "cash" })}
+      />,
+    );
+    expect(container.textContent).toContain("-$15.00");
+    expect(container.textContent).toContain("Cash");
+    const iconWrapper = container.querySelector("button > div");
+    expect(iconWrapper?.className).toContain("bg-brand-100");
+    unmount();
+  });
+
   it("shows a Reversed badge when the transaction was reversed", () => {
     const { container, unmount } = renderToDom(
       <TransactionRow
