@@ -11,6 +11,7 @@ export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 export const TRANSACTION_KINDS = [
   "deposit", // parent-initiated credit
   "charge", // parent-initiated debit
+  "withdrawal", // parent-initiated debit: cash handed to the child
   "transfer_in", // credit leg of a transfer
   "transfer_out", // debit leg of a transfer
   "interest", // monthly interest credit
@@ -26,7 +27,12 @@ export const CREDIT_KINDS: readonly TransactionKind[] = [
   "interest",
   "allowance",
 ];
-export const DEBIT_KINDS: readonly TransactionKind[] = ["charge", "transfer_out", "request_payout"];
+export const DEBIT_KINDS: readonly TransactionKind[] = [
+  "charge",
+  "withdrawal",
+  "transfer_out",
+  "request_payout",
+];
 
 export const TRANSACTION_CATEGORIES = [
   "allowance",
@@ -35,6 +41,7 @@ export const TRANSACTION_CATEGORIES = [
   "gift",
   "purchase",
   "fee",
+  "cash",
   "interest",
   "transfer",
   "adjustment",
@@ -58,6 +65,12 @@ export const CHARGE_CATEGORIES: readonly TransactionCategory[] = [
   "adjustment",
   "other",
 ];
+/** Categories a parent may pick when withdrawing cash for the child. */
+export const WITHDRAWAL_CATEGORIES: readonly TransactionCategory[] = [
+  "cash",
+  "adjustment",
+  "other",
+];
 
 export const ALLOWANCE_FREQUENCIES = ["weekly", "biweekly", "monthly"] as const;
 export type AllowanceFrequency = (typeof ALLOWANCE_FREQUENCIES)[number];
@@ -68,6 +81,7 @@ export type RequestStatus = (typeof REQUEST_STATUSES)[number];
 export const NOTIFICATION_TYPES = [
   "deposit",
   "charge",
+  "withdrawal",
   "allowance",
   "interest",
   "transfer",
@@ -91,6 +105,7 @@ export const CATEGORY_LABELS: Record<TransactionCategory, string> = {
   gift: "Gift",
   purchase: "Purchase",
   fee: "Fee",
+  cash: "Cash",
   interest: "Interest",
   transfer: "Transfer",
   adjustment: "Adjustment",
@@ -100,6 +115,7 @@ export const CATEGORY_LABELS: Record<TransactionCategory, string> = {
 export const KIND_LABELS: Record<TransactionKind, string> = {
   deposit: "Deposit",
   charge: "Charge",
+  withdrawal: "Withdrawal",
   transfer_in: "Transfer in",
   transfer_out: "Transfer out",
   interest: "Interest",

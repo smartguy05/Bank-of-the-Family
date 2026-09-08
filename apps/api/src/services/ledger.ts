@@ -171,6 +171,22 @@ export async function charge(
   return postEntry(db, { ...input, kind: "charge", amountMinor: -Math.abs(input.amountMinor) });
 }
 
+/**
+ * Cash handed to the child by a parent. Functionally a debit like `charge`, but its own kind.
+ * Deliberately NOT in REVERSIBLE_KINDS: once cash changes hands there's nothing to "undo" — a
+ * parent who wants to correct it deposits the money back instead.
+ */
+export async function withdraw(
+  db: Db,
+  input: DepositOrChargeInput,
+): Promise<typeof transactions.$inferSelect> {
+  return postEntry(db, {
+    ...input,
+    kind: "withdrawal",
+    amountMinor: -Math.abs(input.amountMinor),
+  });
+}
+
 export interface TransferInput {
   familyId: string;
   fromAccountId: string;

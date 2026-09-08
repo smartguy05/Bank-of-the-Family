@@ -8,6 +8,7 @@ import type {
   TransactionListQuery,
   TransferBody,
   TransferResult,
+  WithdrawBody,
 } from "@botf/shared";
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/queryKeys";
@@ -66,6 +67,14 @@ export function useCharge() {
   const invalidate = useInvalidateAfterMoneyMove();
   return useMutation({
     mutationFn: (body: ChargeBody) => api.post<Transaction>("/transactions/charge", body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useWithdraw() {
+  const invalidate = useInvalidateAfterMoneyMove();
+  return useMutation({
+    mutationFn: (body: WithdrawBody) => api.post<Transaction>("/transactions/withdraw", body),
     onSuccess: invalidate,
   });
 }

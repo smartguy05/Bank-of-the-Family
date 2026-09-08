@@ -3,6 +3,7 @@ import {
   ArrowDownLeft,
   ArrowLeftRight,
   ArrowUpRight,
+  Banknote,
   Gift,
   Landmark,
   PiggyBank,
@@ -25,6 +26,7 @@ const CATEGORY_ICON: Record<Transaction["category"], LucideIcon> = {
   gift: Gift,
   purchase: ShoppingBag,
   fee: Receipt,
+  cash: Banknote,
   interest: PiggyBank,
   transfer: ArrowLeftRight,
   adjustment: Landmark,
@@ -32,6 +34,7 @@ const CATEGORY_ICON: Record<Transaction["category"], LucideIcon> = {
 };
 
 const KIND_ICON: Partial<Record<Transaction["kind"], LucideIcon>> = {
+  withdrawal: Banknote,
   transfer_in: ArrowDownLeft,
   transfer_out: ArrowUpRight,
   reversal: RotateCcw,
