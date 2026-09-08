@@ -43,6 +43,9 @@ export type DepositBody = z.infer<typeof depositBody>;
 export const chargeBody = depositBody;
 export type ChargeBody = z.infer<typeof chargeBody>;
 
+export const withdrawBody = depositBody;
+export type WithdrawBody = z.infer<typeof withdrawBody>;
+
 export const transferBody = z.object({
   fromAccountId: idSchema,
   toAccountId: idSchema,
