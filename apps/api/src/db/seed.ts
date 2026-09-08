@@ -18,7 +18,7 @@ import { accounts, families, users } from "./schema";
 import { createAllowance } from "../services/allowances";
 import { createChild } from "../services/children";
 import { allocateGoal, createGoal } from "../services/goals";
-import { charge, deposit, reverse, transfer } from "../services/ledger";
+import { charge, deposit, reverse, transfer, withdraw } from "../services/ledger";
 import { notify } from "../services/notify";
 import { createRequest } from "../services/requests";
 import { upsertParentByAuthentikSub } from "../services/users";
@@ -122,6 +122,16 @@ async function seedChildHistory(
     memo: "Moving some into savings",
     createdByUserId: child.userId,
     postedAt: daysAgo(5),
+  });
+
+  await withdraw(db, {
+    familyId: family.id,
+    accountId: child.checkingId,
+    amountMinor: 700,
+    category: "cash",
+    memo: "Cash for the school book fair",
+    createdByUserId: parentId,
+    postedAt: daysAgo(3),
   });
 }
 

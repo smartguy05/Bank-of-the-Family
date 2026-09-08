@@ -1,4 +1,11 @@
-import type { Account, ChildSummary, Family, Transaction, TransferResult } from "@botf/shared";
+import type {
+  Account,
+  ChildSummary,
+  Family,
+  Notification,
+  Transaction,
+  TransferResult,
+} from "@botf/shared";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { cookieFrom, createTestContext, resetDb, type TestContext } from "./helpers";
 
@@ -387,5 +394,140 @@ describe("ledger", () => {
       headers: { cookie },
     });
     expect((accountRes.json() as Account).balanceMinor).toBe(1000);
+  });
+
+  it("withdrawals post a negative entry, update the running balance, and notify the child", async () => {
+    const cookie = await devLogin(ctx, "ledger-parent-12");
+    await createFamily(ctx, cookie);
+    const child = await createChild(ctx, cookie, "kid12");
+    const checking = child.accounts.find((a) => a.type === "checking")!;
+    const childCookie = await childLoginCookie(ctx, "kid12");
+
+    await ctx.app.inject({
+      method: "POST",
+      url: "/api/transactions/deposit",
+      headers: { cookie },
+      payload: { accountId: checking.id, amountMinor: 1000, category: "allowance" },
+    });
+
+    const withdrawRes = await ctx.app.inject({
+      method: "POST",
+      url: "/api/transactions/withdraw",
+      headers: { cookie },
+      payload: {
+        accountId: checking.id,
+        amountMinor: 400,
+        category: "cash",
+        memo: "Cash for the fair",
+      },
+    });
+    expect(withdrawRes.statusCode).toBe(200);
+    const withdrawal = withdrawRes.json() as Transaction;
+    expect(withdrawal.kind).toBe("withdrawal");
+    expect(withdrawal.category).toBe("cash");
+    expect(withdrawal.amountMinor).toBe(-400);
+    expect(withdrawal.runningBalanceMinor).toBe(600);
+
+    const accountRes = await ctx.app.inject({
+      method: "GET",
+      url: `/api/accounts/${checking.id}`,
+      headers: { cookie },
+    });
+    expect((accountRes.json() as Account).balanceMinor).toBe(600);
+
+    const listRes = await ctx.app.inject({
+      method: "GET",
+      url: "/api/notifications",
+      headers: { cookie: childCookie },
+    });
+    const items = (listRes.json() as { items: Notification[] }).items;
+    const withdrawalNotification = items.find((n) => n.type === "withdrawal");
+    expect(withdrawalNotification).toBeDefined();
+    expect(withdrawalNotification!.title).toBe("Withdrawal posted");
+    expect(withdrawalNotification!.data.transactionId).toBe(withdrawal.id);
+  });
+
+  it("defaults the withdrawal category to 'other' when none is given", async () => {
+    const cookie = await devLogin(ctx, "ledger-parent-13");
+    await createFamily(ctx, cookie);
+    const child = await createChild(ctx, cookie, "kid13");
+    const checking = child.accounts.find((a) => a.type === "checking")!;
+
+    await ctx.app.inject({
+      method: "POST",
+      url: "/api/transactions/deposit",
+      headers: { cookie },
+      payload: { accountId: checking.id, amountMinor: 1000, category: "allowance" },
+    });
+    const withdrawRes = await ctx.app.inject({
+      method: "POST",
+      url: "/api/transactions/withdraw",
+      headers: { cookie },
+      payload: { accountId: checking.id, amountMinor: 200 },
+    });
+    expect(withdrawRes.statusCode).toBe(200);
+    expect((withdrawRes.json() as Transaction).category).toBe("other");
+  });
+
+  it("rejects a withdrawal beyond the balance with 409", async () => {
+    const cookie = await devLogin(ctx, "ledger-parent-14");
+    await createFamily(ctx, cookie);
+    const child = await createChild(ctx, cookie, "kid14");
+    const checking = child.accounts.find((a) => a.type === "checking")!;
+
+    const res = await ctx.app.inject({
+      method: "POST",
+      url: "/api/transactions/withdraw",
+      headers: { cookie },
+      payload: { accountId: checking.id, amountMinor: 500, category: "cash" },
+    });
+    expect(res.statusCode).toBe(409);
+    expect((res.json() as { code: string }).code).toBe("INSUFFICIENT_FUNDS");
+  });
+
+  it("a withdrawal cannot be reversed", async () => {
+    const cookie = await devLogin(ctx, "ledger-parent-15");
+    await createFamily(ctx, cookie);
+    const child = await createChild(ctx, cookie, "kid15");
+    const checking = child.accounts.find((a) => a.type === "checking")!;
+
+    await ctx.app.inject({
+      method: "POST",
+      url: "/api/transactions/deposit",
+      headers: { cookie },
+      payload: { accountId: checking.id, amountMinor: 1000, category: "allowance" },
+    });
+    const withdrawRes = await ctx.app.inject({
+      method: "POST",
+      url: "/api/transactions/withdraw",
+      headers: { cookie },
+      payload: { accountId: checking.id, amountMinor: 400, category: "cash" },
+    });
+    const withdrawal = withdrawRes.json() as Transaction;
+
+    const reverseRes = await ctx.app.inject({
+      method: "POST",
+      url: "/api/transactions/reverse",
+      headers: { cookie },
+      payload: { transactionId: withdrawal.id },
+    });
+    expect(reverseRes.statusCode).toBe(400);
+    expect((reverseRes.json() as { code: string }).code).toBe("NOT_REVERSIBLE");
+  });
+
+  it("does not let a child withdraw", async () => {
+    const cookie = await devLogin(ctx, "ledger-parent-16");
+    await createFamily(ctx, cookie);
+    const child = await createChild(ctx, cookie, "kid16");
+    const checking = child.accounts.find((a) => a.type === "checking")!;
+    const childCookie = await childLoginCookie(ctx, "kid16");
+
+    const res = await ctx.app.inject({
+      method: "POST",
+      url: "/api/transactions/withdraw",
+      headers: { cookie: childCookie },
+      payload: { accountId: checking.id, amountMinor: 100, category: "cash" },
+    });
+    expect(res.statusCode).toBe(403);
   });
 });

@@ -66,7 +66,11 @@ export const CHARGE_CATEGORIES: readonly TransactionCategory[] = [
   "other",
 ];
 /** Categories a parent may pick when withdrawing cash for the child. */
-export const WITHDRAWAL_CATEGORIES: readonly TransactionCategory[] = ["cash", "adjustment", "other"];
+export const WITHDRAWAL_CATEGORIES: readonly TransactionCategory[] = [
+  "cash",
+  "adjustment",
+  "other",
+];
 
 export const ALLOWANCE_FREQUENCIES = ["weekly", "biweekly", "monthly"] as const;
 export type AllowanceFrequency = (typeof ALLOWANCE_FREQUENCIES)[number];

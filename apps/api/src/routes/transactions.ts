@@ -12,6 +12,7 @@ import {
   transactionSchema,
   transferBody,
   transferResult,
+  withdrawBody,
 } from "@botf/shared";
 import { and, eq } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
@@ -30,6 +31,7 @@ import {
   reverse,
   toTransactionDto,
   transfer,
+  withdraw,
 } from "../services/ledger";
 import { notify } from "../services/notify";
 
@@ -142,6 +144,48 @@ export const transactionsRoutes: FastifyPluginAsync = async (app) => {
         actorId: request.currentUser!.id,
         type: "charge",
         title: "Charge posted",
+        category: dto.category,
+        amountMinor: dto.amountMinor,
+        memo: dto.memo,
+        transactionId: dto.id,
+      });
+      return dto;
+    },
+  );
+
+  r.post(
+    "/transactions/withdraw",
+    {
+      preHandler: [requireParent],
+      schema: { tags: ["transactions"], body: withdrawBody, response: { 200: transactionSchema } },
+    },
+    async (request) => {
+      if (!request.family) throw forbidden("Create or join a family first");
+      const account = await getAccountOr404(app.db, request.body.accountId, request.family.id);
+      const row = await withdraw(app.db, {
+        familyId: request.family.id,
+        accountId: account.id,
+        amountMinor: request.body.amountMinor,
+        category: request.body.category,
+        memo: request.body.memo,
+        createdByUserId: request.currentUser!.id,
+        idempotencyKey: request.body.idempotencyKey,
+      });
+      const dto = await toTransactionDto(app.db, row);
+      await audit(app.db, {
+        familyId: request.family.id,
+        actorUserId: request.currentUser!.id,
+        action: "transaction.withdrawal",
+        entity: "transaction",
+        entityId: dto.id,
+        data: { accountId: account.id, amountMinor: dto.amountMinor },
+      });
+      await notifyAccountOwner(app, {
+        account,
+        family: request.family,
+        actorId: request.currentUser!.id,
+        type: "withdrawal",
+        title: "Withdrawal posted",
         category: dto.category,
         amountMinor: dto.amountMinor,
         memo: dto.memo,

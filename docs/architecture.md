@@ -46,8 +46,10 @@ deposit and charge, kids watch balances grow, earn interest, save toward goals, 
 - `transactions` is an append-only ledger. Each entry is signed (credits positive, debits negative) and
   stores the running balance after it posted. `accounts.balance_minor` is a cache kept in the same DB
   transaction. The account row is locked (`SELECT … FOR UPDATE`) while posting.
-- Kinds: `deposit`, `charge`, `transfer_in`/`transfer_out` (two linked legs), `allowance`, `interest`,
-  `request_payout`, `reversal`. Categories (Allowance, Chore, Reward, Gift, Purchase, …) label the entry.
+- Kinds: `deposit`, `charge`, `withdrawal` (parent-initiated debit for cash handed to the child; not
+  reversible — a parent corrects it with a deposit instead), `transfer_in`/`transfer_out` (two linked
+  legs), `allowance`, `interest`, `request_payout`, `reversal`. Categories (Allowance, Chore, Reward,
+  Gift, Purchase, …) label the entry.
 - No overdraft unless the family enables `allowOverdraft`.
 - Savings goals earmark money inside an account: available balance = balance − open goal earmarks.
 - Scheduled allowance and monthly interest are posted by the in-process scheduler with idempotency keys,

@@ -15,6 +15,13 @@
       "when": 1788670082231,
       "tag": "0001_white_vermin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788833810242,
+      "tag": "0002_sad_silver_surfer",
+      "breakpoints": true
     }
   ]
 }

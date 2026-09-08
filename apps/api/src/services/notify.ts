@@ -32,6 +32,7 @@ function pushUrlFor(type: NotificationType, data: Record<string, unknown>): stri
   switch (type) {
     case "deposit":
     case "charge":
+    case "withdrawal":
     case "allowance":
     case "interest":
     case "transfer":
