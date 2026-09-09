@@ -17,6 +17,7 @@ import {
   ACCOUNT_STATUSES,
   ACCOUNT_TYPES,
   ALLOWANCE_FREQUENCIES,
+  IOU_STATUSES,
   NOTIFICATION_TYPES,
   REQUEST_STATUSES,
   TRANSACTION_CATEGORIES,
@@ -32,6 +33,7 @@ export const transactionCategoryEnum = pgEnum("transaction_category", TRANSACTIO
 export const allowanceFrequencyEnum = pgEnum("allowance_frequency", ALLOWANCE_FREQUENCIES);
 export const requestStatusEnum = pgEnum("request_status", REQUEST_STATUSES);
 export const notificationTypeEnum = pgEnum("notification_type", NOTIFICATION_TYPES);
+export const iouStatusEnum = pgEnum("iou_status", IOU_STATUSES);
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -274,6 +276,79 @@ export const peerRequests = pgTable(
   ],
 );
 
+/** A debt one child owes another. Money only moves through `iou_payments` (ledger transfers). */
+export const ious = pgTable(
+  "ious",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    familyId: uuid("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    /** Who owes the money. */
+    debtorUserId: uuid("debtor_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Who is owed the money. */
+    creditorUserId: uuid("creditor_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Parent or child who recorded it. */
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    amountMinor: bigint("amount_minor", { mode: "number" }).notNull(),
+    /** Sum of `iou_payments.amount_minor`; cached for listing. */
+    paidMinor: bigint("paid_minor", { mode: "number" }).notNull().default(0),
+    reason: text("reason").notNull(),
+    /** YYYY-MM-DD, display only. */
+    dueDate: text("due_date"),
+    status: iouStatusEnum("status").notNull().default("pending_acceptance"),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    settledAt: timestamp("settled_at", { withTimezone: true }),
+    /** Set when declined, cancelled or forgiven. */
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    closedByUserId: uuid("closed_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (t) => [
+    index("ious_family_status_idx").on(t.familyId, t.status),
+    index("ious_debtor_idx").on(t.debtorUserId, t.status),
+    index("ious_creditor_idx").on(t.creditorUserId, t.status),
+  ],
+);
+
+/** One (possibly partial) payment on an IOU, linked to both legs of the ledger transfer. */
+export const iouPayments = pgTable(
+  "iou_payments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    iouId: uuid("iou_id")
+      .notNull()
+      .references(() => ious.id, { onDelete: "cascade" }),
+    familyId: uuid("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    amountMinor: bigint("amount_minor", { mode: "number" }).notNull(),
+    fromAccountId: uuid("from_account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    toAccountId: uuid("to_account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    outTransactionId: uuid("out_transaction_id").references(() => transactions.id, {
+      onDelete: "set null",
+    }),
+    inTransactionId: uuid("in_transaction_id").references(() => transactions.id, {
+      onDelete: "set null",
+    }),
+    paidByUserId: uuid("paid_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [index("iou_payments_iou_idx").on(t.iouId, t.createdAt)],
+);
+
 export const notifications = pgTable(
   "notifications",
   {
@@ -344,6 +419,8 @@ export type AllowanceSchedule = typeof allowanceSchedules.$inferSelect;
 export type SavingsGoal = typeof savingsGoals.$inferSelect;
 export type MoneyRequest = typeof moneyRequests.$inferSelect;
 export type PeerRequest = typeof peerRequests.$inferSelect;
+export type Iou = typeof ious.$inferSelect;
+export type IouPayment = typeof iouPayments.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type FamilyInvite = typeof familyInvites.$inferSelect;

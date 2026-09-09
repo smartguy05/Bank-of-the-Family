@@ -44,6 +44,7 @@ export const TRANSACTION_CATEGORIES = [
   "cash",
   "interest",
   "transfer",
+  "iou", // legs of an IOU payment between siblings
   "adjustment",
   "other",
 ] as const;
@@ -78,6 +79,22 @@ export type AllowanceFrequency = (typeof ALLOWANCE_FREQUENCIES)[number];
 export const REQUEST_STATUSES = ["pending", "approved", "declined", "cancelled"] as const;
 export type RequestStatus = (typeof REQUEST_STATUSES)[number];
 
+/**
+ * Lifecycle of an IOU (a debt one child owes another).
+ * - pending_acceptance: a child claimed a sibling owes them; the debtor must accept or decline.
+ * - open: acknowledged and payable (partial payments allowed).
+ * - settled: fully paid. declined/cancelled: never became a debt. forgiven: written off by a parent.
+ */
+export const IOU_STATUSES = [
+  "pending_acceptance",
+  "open",
+  "settled",
+  "declined",
+  "cancelled",
+  "forgiven",
+] as const;
+export type IouStatus = (typeof IOU_STATUSES)[number];
+
 export const NOTIFICATION_TYPES = [
   "deposit",
   "charge",
@@ -93,6 +110,12 @@ export const NOTIFICATION_TYPES = [
   "peer_request_received",
   "peer_request_approved",
   "peer_request_declined",
+  "iou_proposed",
+  "iou_created",
+  "iou_accepted",
+  "iou_declined",
+  "iou_paid",
+  "iou_forgiven",
   "pin_reset",
   "system",
 ] as const;
@@ -108,6 +131,7 @@ export const CATEGORY_LABELS: Record<TransactionCategory, string> = {
   cash: "Cash",
   interest: "Interest",
   transfer: "Transfer",
+  iou: "IOU",
   adjustment: "Adjustment",
   other: "Other",
 };

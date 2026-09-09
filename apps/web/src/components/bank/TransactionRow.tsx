@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   Banknote,
   Gift,
+  Handshake,
   Landmark,
   PiggyBank,
   Receipt,
@@ -29,6 +30,7 @@ const CATEGORY_ICON: Record<Transaction["category"], LucideIcon> = {
   cash: Banknote,
   interest: PiggyBank,
   transfer: ArrowLeftRight,
+  iou: Handshake,
   adjustment: Landmark,
   other: Receipt,
 };

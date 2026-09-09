@@ -197,6 +197,8 @@ export interface TransferInput {
   idempotencyKey?: string;
   /** Backdates both legs (e.g. demo seed history). Defaults to now. */
   postedAt?: Date;
+  /** Stamped on both legs. Defaults to `transfer`; IOU payments pass `iou`. */
+  category?: TransactionCategory;
 }
 
 export interface TransferResultRows {
@@ -205,51 +207,59 @@ export interface TransferResultRows {
 }
 
 export async function transfer(db: Db, input: TransferInput): Promise<TransferResultRows> {
+  return db.transaction((tx) => transferInTx(tx, input));
+}
+
+/**
+ * Posts both legs of a transfer inside an existing transaction, so callers that must update
+ * their own rows atomically with the money movement (e.g. IOU payments) can share the `tx`.
+ * Prefer `transfer` unless you need that.
+ */
+export async function transferInTx(tx: Tx, input: TransferInput): Promise<TransferResultRows> {
   if (input.fromAccountId === input.toAccountId) {
     throw badRequest("SAME_ACCOUNT", "Cannot transfer to the same account");
   }
-  return db.transaction(async (tx) => {
-    // Lock both accounts in a deterministic order to avoid deadlocks with concurrent transfers.
-    const ids = [input.fromAccountId, input.toAccountId].sort();
-    await tx
-      .select({ id: accounts.id })
-      .from(accounts)
-      .where(inArray(accounts.id, ids))
-      .for("update");
+  const category = input.category ?? "transfer";
+  // Lock both accounts in a deterministic order to avoid deadlocks with concurrent transfers.
+  const ids = [input.fromAccountId, input.toAccountId].sort();
+  await tx
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(inArray(accounts.id, ids))
+    .for("update");
 
-    const outKey = input.idempotencyKey ? `${input.idempotencyKey}:out` : undefined;
-    const inKey = input.idempotencyKey ? `${input.idempotencyKey}:in` : undefined;
+  const outKey = input.idempotencyKey ? `${input.idempotencyKey}:out` : undefined;
+  const inKey = input.idempotencyKey ? `${input.idempotencyKey}:in` : undefined;
 
-    const out = await insertEntry(tx, {
-      familyId: input.familyId,
-      accountId: input.fromAccountId,
-      kind: "transfer_out",
-      category: "transfer",
-      amountMinor: -Math.abs(input.amountMinor),
-      memo: input.memo ?? "",
-      createdByUserId: input.createdByUserId,
-      idempotencyKey: outKey,
-      postedAt: input.postedAt,
-    });
-    const inn = await insertEntry(tx, {
-      familyId: input.familyId,
-      accountId: input.toAccountId,
-      kind: "transfer_in",
-      category: "transfer",
-      amountMinor: Math.abs(input.amountMinor),
-      memo: input.memo ?? "",
-      createdByUserId: input.createdByUserId,
-      relatedTransactionId: out.id,
-      idempotencyKey: inKey,
-      postedAt: input.postedAt,
-    });
-    const [updatedOut] = await tx
-      .update(transactions)
-      .set({ relatedTransactionId: inn.id })
-      .where(eq(transactions.id, out.id))
-      .returning();
-    return { out: updatedOut!, in: inn };
+  const out = await insertEntry(tx, {
+    familyId: input.familyId,
+    accountId: input.fromAccountId,
+    kind: "transfer_out",
+    category,
+    amountMinor: -Math.abs(input.amountMinor),
+    memo: input.memo ?? "",
+    createdByUserId: input.createdByUserId,
+    idempotencyKey: outKey,
+    postedAt: input.postedAt,
   });
+  const inn = await insertEntry(tx, {
+    familyId: input.familyId,
+    accountId: input.toAccountId,
+    kind: "transfer_in",
+    category,
+    amountMinor: Math.abs(input.amountMinor),
+    memo: input.memo ?? "",
+    createdByUserId: input.createdByUserId,
+    relatedTransactionId: out.id,
+    idempotencyKey: inKey,
+    postedAt: input.postedAt,
+  });
+  const [updatedOut] = await tx
+    .update(transactions)
+    .set({ relatedTransactionId: inn.id })
+    .where(eq(transactions.id, out.id))
+    .returning();
+  return { out: updatedOut!, in: inn };
 }
 
 export interface ReverseInput {
