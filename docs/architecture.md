@@ -52,6 +52,11 @@ deposit and charge, kids watch balances grow, earn interest, save toward goals, 
   Gift, Purchase, …) label the entry.
 - No overdraft unless the family enables `allowOverdraft`.
 - Savings goals earmark money inside an account: available balance = balance − open goal earmarks.
+- IOUs (`ious`) record that one child owes another. A kid who owes can record it directly; a kid who is
+  owed records a claim the debtor must accept. Payments (whole or partial, by the debtor or a parent on
+  their behalf) are ordinary two-leg transfers with category `iou`, each tracked in `iou_payments`; a
+  parent can forgive what remains. Deleting an IOU is only possible before any money has moved, so the
+  ledger is never contradicted.
 - Scheduled allowance and monthly interest are posted by the in-process scheduler with idempotency keys,
   so retries never double-post. Interest = balance × annual rate / 12, posted on the 1st of each month
   in the family's timezone.
@@ -67,7 +72,8 @@ Android TWA runs inside Chrome, so the same Web Push works there without Firebas
 Every family-scoped query is filtered by the **session user's** family id. Parents have full access
 within their family. Children can read their own accounts, transactions, goals and notifications, and
 can create goals and money requests, move money between their own accounts, change their PIN, and
-manage push subscriptions.
+manage push subscriptions. They can also send money to siblings, request it from them, and record and
+pay IOUs with them; every family member can see the family's IOUs.
 
 ## Runtime
 
