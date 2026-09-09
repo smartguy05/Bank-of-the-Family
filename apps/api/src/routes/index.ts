@@ -7,6 +7,7 @@ import { dashboardRoutes } from "./dashboard";
 import { familiesRoutes } from "./families";
 import { goalsRoutes } from "./goals";
 import { healthRoutes } from "./health";
+import { iousRoutes } from "./ious";
 import { notificationsRoutes } from "./notifications";
 import { peerRequestsRoutes } from "./peerRequests";
 import { requestsRoutes } from "./requests";
@@ -29,6 +30,7 @@ export const registerRoutes: FastifyPluginAsync = async (app) => {
   await app.register(goalsRoutes);
   await app.register(requestsRoutes);
   await app.register(peerRequestsRoutes);
+  await app.register(iousRoutes);
   await app.register(notificationsRoutes);
   await app.register(statementsRoutes);
 };

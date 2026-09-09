@@ -3,10 +3,11 @@ import type { ChildSummary, CreateChildBody, UpdateChildBody, User } from "@botf
 import { api } from "@/lib/api";
 import { queryKeys } from "@/lib/queryKeys";
 
-export function useChildren() {
+export function useChildren(enabled = true) {
   return useQuery({
     queryKey: queryKeys.children(),
     queryFn: () => api.get<ChildSummary[]>("/children"),
+    enabled,
   });
 }
 

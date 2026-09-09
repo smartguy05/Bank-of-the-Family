@@ -15,6 +15,9 @@ export interface PeerRequestCardProps {
   /** Requester control, shown while pending. */
   onCancel?: (request: PeerRequest) => void;
   cancelling?: boolean;
+  /** Parent control, shown for any status except approved. */
+  onDelete?: (request: PeerRequest) => void;
+  deleting?: boolean;
 }
 
 export function PeerRequestCard({
@@ -24,11 +27,21 @@ export function PeerRequestCard({
   onDecline,
   onCancel,
   cancelling,
+  onDelete,
+  deleting,
 }: PeerRequestCardProps) {
   const isPayer = meUserId === request.payerUserId;
   const isRequester = meUserId === request.requesterUserId;
-  const otherName = isPayer ? request.requesterName : request.payerName;
-  const direction = isPayer ? `${request.requesterName} → You` : `You → ${request.payerName}`;
+  const otherName = isPayer
+    ? request.requesterName
+    : isRequester
+      ? request.payerName
+      : request.requesterName;
+  const direction = isPayer
+    ? `${request.requesterName} → You`
+    : isRequester
+      ? `You → ${request.payerName}`
+      : `${request.payerName} → ${request.requesterName}`;
 
   const myTransactionId = isPayer ? request.payerTransactionId : request.requesterTransactionId;
   const myAccountId = isPayer ? request.payerAccountId : request.requesterAccountId;
@@ -90,6 +103,14 @@ export function PeerRequestCard({
           >
             View receipt
           </Link>
+        </div>
+      )}
+
+      {request.status !== "approved" && onDelete && (
+        <div className="pl-11">
+          <Button size="sm" variant="danger" loading={deleting} onClick={() => onDelete(request)}>
+            Delete
+          </Button>
         </div>
       )}
     </div>

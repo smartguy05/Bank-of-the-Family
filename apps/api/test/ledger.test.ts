@@ -515,6 +515,46 @@ describe("ledger", () => {
     expect((reverseRes.json() as { code: string }).code).toBe("NOT_REVERSIBLE");
   });
 
+  it("transfer() stamps both legs with the given category, or 'transfer' by default", async () => {
+    const cookie = await devLogin(ctx, "ledger-parent-17");
+    const family = await createFamily(ctx, cookie);
+    const child = await createChild(ctx, cookie, "kid17");
+    const checking = child.accounts.find((a) => a.type === "checking")!;
+    const savings = child.accounts.find((a) => a.type === "savings")!;
+
+    await ctx.app.inject({
+      method: "POST",
+      url: "/api/transactions/deposit",
+      headers: { cookie },
+      payload: { accountId: checking.id, amountMinor: 1000, category: "allowance" },
+    });
+
+    const { transfer } = await import("../src/services/ledger");
+
+    const iouResult = await transfer(ctx.db, {
+      familyId: family.id,
+      fromAccountId: checking.id,
+      toAccountId: savings.id,
+      amountMinor: 100,
+      createdByUserId: null,
+      category: "iou",
+    });
+    expect(iouResult.out.category).toBe("iou");
+    expect(iouResult.in.category).toBe("iou");
+
+    // Default (no category passed) via the HTTP transfer route.
+    const defaultRes = await ctx.app.inject({
+      method: "POST",
+      url: "/api/transactions/transfer",
+      headers: { cookie },
+      payload: { fromAccountId: checking.id, toAccountId: savings.id, amountMinor: 50 },
+    });
+    expect(defaultRes.statusCode).toBe(200);
+    const result = defaultRes.json() as TransferResult;
+    expect(result.out.category).toBe("transfer");
+    expect(result.in.category).toBe("transfer");
+  });
+
   it("does not let a child withdraw", async () => {
     const cookie = await devLogin(ctx, "ledger-parent-16");
     await createFamily(ctx, cookie);

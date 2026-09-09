@@ -26,8 +26,13 @@ export function NotificationsPage() {
 
   async function handleClick(n: Notification) {
     if (!n.readAt) void markRead.mutateAsync(n.id);
-    const data = n.data as { accountId?: string; requestId?: string };
-    if (data.requestId) {
+    const data = n.data as {
+      accountId?: string;
+      requestId?: string;
+      peerRequestId?: string;
+      iouId?: string;
+    };
+    if (data.requestId || data.peerRequestId || data.iouId) {
       void navigate({ to: "/requests" });
     } else if (data.accountId) {
       void navigate({ to: "/accounts/$accountId", params: { accountId: data.accountId } });

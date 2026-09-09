@@ -89,20 +89,23 @@ export async function toPeerRequestDto(
 
 export interface ListPeerRequestsParams extends RequestListQuery {
   familyId: string;
-  userId: string;
+  /** Omit to see every peer request in the family (parents); set to narrow to one child's own. */
+  userId?: string;
 }
 
 export async function listPeerRequests(
   db: Db,
   params: ListPeerRequestsParams,
 ): Promise<{ items: PeerRequestDto[]; nextCursor: string | null }> {
-  const conds = [
-    eq(peerRequests.familyId, params.familyId),
-    or(
-      eq(peerRequests.requesterUserId, params.userId),
-      eq(peerRequests.payerUserId, params.userId),
-    )!,
-  ];
+  const conds = [eq(peerRequests.familyId, params.familyId)];
+  if (params.userId) {
+    conds.push(
+      or(
+        eq(peerRequests.requesterUserId, params.userId),
+        eq(peerRequests.payerUserId, params.userId),
+      )!,
+    );
+  }
   if (params.status) conds.push(eq(peerRequests.status, params.status));
 
   if (params.cursor) {
@@ -260,6 +263,14 @@ export async function approvePeerRequest(
     .where(eq(peerRequests.id, id))
     .returning();
   return toPeerRequestDto(db, row!);
+}
+
+export async function deletePeerRequest(db: Db, familyId: string, id: string): Promise<void> {
+  const current = await getPeerRequestOr404(db, familyId, id);
+  if (current.status === "approved") {
+    throw conflict("REQUEST_APPROVED", "This request was already paid");
+  }
+  await db.delete(peerRequests).where(eq(peerRequests.id, id));
 }
 
 export async function declinePeerRequest(

@@ -15,13 +15,103 @@ import { PeerRequestCard } from "@/components/bank/PeerRequestCard";
 import { SendMoneyDialog } from "@/components/bank/SendMoneyDialog";
 import { RequestFromSiblingDialog } from "@/components/bank/RequestFromSiblingDialog";
 import { DecidePeerRequestDialog } from "@/components/bank/DecidePeerRequestDialog";
+import { ConfirmDialog } from "@/components/bank/ConfirmDialog";
+import { KidIouSection, ParentIouSection } from "@/components/bank/IouSections";
 import { useCancelRequest, useRequests } from "@/hooks/useRequests";
-import { useCancelPeerRequest, usePeerRequests } from "@/hooks/usePeerRequests";
+import {
+  useCancelPeerRequest,
+  useDeletePeerRequest,
+  usePeerRequests,
+} from "@/hooks/usePeerRequests";
 import { useAccounts } from "@/hooks/useAccounts";
 import { useMe } from "@/hooks/useMe";
 
+function ParentFamilyRequests() {
+  const { data: me } = useMe();
+  const requestsQuery = usePeerRequests();
+  const deletePeerRequest = useDeletePeerRequest();
+  const toast = useToast();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<PeerRequest | null>(null);
+
+  const items = useMemo(
+    () => requestsQuery.data?.pages.flatMap((p) => p.items) ?? [],
+    [requestsQuery.data],
+  );
+
+  async function handleDeleteConfirm() {
+    if (!confirmTarget) return;
+    setDeletingId(confirmTarget.id);
+    try {
+      await deletePeerRequest.mutateAsync(confirmTarget.id);
+      toast.info("Request deleted");
+      setConfirmTarget(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not delete request");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  return (
+    <div>
+      <Card>
+        <CardBody className="px-4 py-1">
+          {requestsQuery.isLoading ? (
+            <div className="space-y-3 py-4">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : items.length === 0 ? (
+            <EmptyState
+              icon={<Inbox size={28} />}
+              title="No sibling requests"
+              description="Requests your kids send each other will show up here."
+            />
+          ) : (
+            <div className="divide-y divide-line">
+              {items.map((r) => (
+                <PeerRequestCard
+                  key={r.id}
+                  request={r}
+                  meUserId={me?.user.id ?? ""}
+                  onDelete={(req) => setConfirmTarget(req)}
+                  deleting={deletingId === r.id}
+                />
+              ))}
+            </div>
+          )}
+          {requestsQuery.hasNextPage && (
+            <div className="flex justify-center py-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={requestsQuery.isFetchingNextPage}
+                onClick={() => void requestsQuery.fetchNextPage()}
+              >
+                Load more
+              </Button>
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
+      <ConfirmDialog
+        open={Boolean(confirmTarget)}
+        title="Delete this request?"
+        description="This removes it for everyone."
+        confirmLabel="Delete"
+        danger
+        loading={Boolean(confirmTarget) && deletingId === confirmTarget?.id}
+        onConfirm={() => void handleDeleteConfirm()}
+        onClose={() => setConfirmTarget(null)}
+      />
+    </div>
+  );
+}
+
 function ParentRequests() {
-  const [tab, setTab] = useState<"pending" | "history">("pending");
+  const [tab, setTab] = useState<"pending" | "history" | "family" | "ious">("pending");
   const pendingQuery = useRequests("pending");
   const historyQuery = useRequests();
   const [decision, setDecision] = useState<{
@@ -39,59 +129,67 @@ function ParentRequests() {
 
   return (
     <div>
-      <PageHeader title="Requests" subtitle="Money requests from your kids" />
+      <PageHeader title="Requests" subtitle="Money requests, sibling requests and IOUs" />
       <Tabs
         className="mb-2"
         value={tab}
-        onChange={(v) => setTab(v as "pending" | "history")}
+        onChange={(v) => setTab(v as "pending" | "history" | "family" | "ious")}
         items={[
           { value: "pending", label: `Pending${pending.length ? ` (${pending.length})` : ""}` },
           { value: "history", label: "History" },
+          { value: "family", label: "Family" },
+          { value: "ious", label: "IOUs" },
         ]}
       />
-      <Card>
-        <CardBody className="px-4 py-1">
-          {query.isLoading ? (
-            <div className="space-y-3 py-4">
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-            </div>
-          ) : items.length === 0 ? (
-            <EmptyState
-              icon={<Inbox size={28} />}
-              title={tab === "pending" ? "Nothing pending" : "No history yet"}
-              description={
-                tab === "pending"
-                  ? "Requests from your kids will show up here."
-                  : "Decided requests will show up here."
-              }
-            />
-          ) : (
-            <div className="divide-y divide-line">
-              {items.map((r) => (
-                <RequestCard
-                  key={r.id}
-                  request={r}
-                  onApprove={(req) => setDecision({ request: req, action: "approve" })}
-                  onDecline={(req) => setDecision({ request: req, action: "decline" })}
-                />
-              ))}
-            </div>
-          )}
-          {query.hasNextPage && (
-            <div className="flex justify-center py-3">
-              <Button
-                variant="secondary"
-                size="sm"
-                loading={query.isFetchingNextPage}
-                onClick={() => void query.fetchNextPage()}
-              >
-                Load more
-              </Button>
-            </div>
-          )}
-        </CardBody>
-      </Card>
+      {tab === "pending" || tab === "history" ? (
+        <Card>
+          <CardBody className="px-4 py-1">
+            {query.isLoading ? (
+              <div className="space-y-3 py-4">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+            ) : items.length === 0 ? (
+              <EmptyState
+                icon={<Inbox size={28} />}
+                title={tab === "pending" ? "Nothing pending" : "No history yet"}
+                description={
+                  tab === "pending"
+                    ? "Requests from your kids will show up here."
+                    : "Decided requests will show up here."
+                }
+              />
+            ) : (
+              <div className="divide-y divide-line">
+                {items.map((r) => (
+                  <RequestCard
+                    key={r.id}
+                    request={r}
+                    onApprove={(req) => setDecision({ request: req, action: "approve" })}
+                    onDecline={(req) => setDecision({ request: req, action: "decline" })}
+                  />
+                ))}
+              </div>
+            )}
+            {query.hasNextPage && (
+              <div className="flex justify-center py-3">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={query.isFetchingNextPage}
+                  onClick={() => void query.fetchNextPage()}
+                >
+                  Load more
+                </Button>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      ) : tab === "family" ? (
+        <ParentFamilyRequests />
+      ) : (
+        <ParentIouSection />
+      )}
 
       <DecideRequestDialog
         request={decision?.request ?? null}
@@ -281,21 +379,29 @@ function FamilyRequests() {
 }
 
 function KidRequests() {
-  const [tab, setTab] = useState<"parent" | "family">("parent");
+  const { data: me } = useMe();
+  const [tab, setTab] = useState<"parent" | "family" | "ious">("parent");
 
   return (
     <div>
-      <PageHeader title="Requests" subtitle="Ask a parent, or send and request money with family" />
+      <PageHeader title="Requests" subtitle="Ask a parent, settle up with siblings, track IOUs" />
       <Tabs
         className="mb-2"
         value={tab}
-        onChange={(v) => setTab(v as "parent" | "family")}
+        onChange={(v) => setTab(v as "parent" | "family" | "ious")}
         items={[
           { value: "parent", label: "Parent" },
           { value: "family", label: "Family" },
+          { value: "ious", label: "IOUs" },
         ]}
       />
-      {tab === "parent" ? <ParentAskRequests /> : <FamilyRequests />}
+      {tab === "parent" ? (
+        <ParentAskRequests />
+      ) : tab === "family" ? (
+        <FamilyRequests />
+      ) : (
+        <KidIouSection meUserId={me?.user.id ?? ""} />
+      )}
     </div>
   );
 }

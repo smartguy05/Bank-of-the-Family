@@ -22,6 +22,13 @@
       "when": 1788833810242,
       "tag": "0002_sad_silver_surfer",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788977732731,
+      "tag": "0003_clean_logan",
+      "breakpoints": true
     }
   ]
 }
