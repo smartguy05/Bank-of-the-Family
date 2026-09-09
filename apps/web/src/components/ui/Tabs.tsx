@@ -30,9 +30,7 @@ export function Tabs({ items, value, onChange, className }: TabsProps) {
             className={cn(
               "shrink-0 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500",
-              active
-                ? "border-brand-800 text-brand-900"
-                : "border-transparent text-muted hover:text-ink",
+              active ? "border-ink text-ink" : "border-transparent text-muted hover:text-ink",
             )}
           >
             {item.label}

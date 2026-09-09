@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { PinInput } from "@/components/ui/PinInput";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useToast } from "@/components/ui/Toast";
 import { useChangePin, useLogout, useMe } from "@/hooks/useMe";
 import { ApiError } from "@/lib/api";
@@ -143,6 +144,15 @@ export function ProfilePage() {
           <p className="flex-1 font-medium text-ink">Notifications</p>
           <ChevronRight size={18} className="text-muted" />
         </Link>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="font-semibold text-ink">Appearance</h2>
+        </CardHeader>
+        <CardBody>
+          <ThemeToggle />
+        </CardBody>
       </Card>
 
       {isChild && <ChangePinCard />}

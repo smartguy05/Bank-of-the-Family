@@ -19,7 +19,7 @@ export function BottomTabBar({ items }: { items: NavItem[] }) {
                 to={item.to}
                 className={cn(
                   "flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium",
-                  active ? "text-brand-900" : "text-muted",
+                  active ? "text-ink" : "text-muted",
                 )}
                 aria-current={active ? "page" : undefined}
               >

@@ -105,7 +105,7 @@ export function PinInput({
           onPaste={handlePaste}
           aria-label={`Digit ${i + 1} of ${length}`}
           className={cn(
-            "h-14 w-12 rounded-lg border bg-white text-center text-2xl font-semibold text-ink",
+            "h-14 w-12 rounded-lg border bg-card text-center text-2xl font-semibold text-ink",
             "focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent",
             invalid ? "border-negative" : "border-line",
             disabled && "opacity-60 cursor-not-allowed bg-surface",
