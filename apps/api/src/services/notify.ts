@@ -44,6 +44,12 @@ function pushUrlFor(type: NotificationType, data: Record<string, unknown>): stri
     case "peer_request_received":
     case "peer_request_approved":
     case "peer_request_declined":
+    case "iou_proposed":
+    case "iou_created":
+    case "iou_accepted":
+    case "iou_declined":
+    case "iou_paid":
+    case "iou_forgiven":
       return "/requests";
     case "goal_reached":
       return "/goals";

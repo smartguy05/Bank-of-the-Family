@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Inbox, KeyRound, PenSquare, Plus, Target } from "lucide-react";
+import { Handshake, Inbox, KeyRound, PenSquare, Plus, Target } from "lucide-react";
 import { childDetailRoute } from "@/router";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -23,6 +23,7 @@ import { InterestCard } from "@/components/bank/InterestCard";
 import { GoalCard } from "@/components/bank/GoalCard";
 import { RequestCard } from "@/components/bank/RequestCard";
 import { DecideRequestDialog } from "@/components/bank/DecideRequestDialog";
+import { ParentIouSection } from "@/components/bank/IouSections";
 import { useChild } from "@/hooks/useChildren";
 import { useAccounts } from "@/hooks/useAccounts";
 import { useGoals } from "@/hooks/useGoals";
@@ -211,6 +212,16 @@ export function ChildDetailPage() {
             )}
           </CardBody>
         </Card>
+      </div>
+
+      <div className="mt-6">
+        <div className="mb-2 flex items-center gap-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-brand-800">
+            <Handshake size={18} />
+          </div>
+          <h2 className="font-semibold text-ink">IOUs</h2>
+        </div>
+        <ParentIouSection filterChildId={childId} />
       </div>
 
       <DecideRequestDialog

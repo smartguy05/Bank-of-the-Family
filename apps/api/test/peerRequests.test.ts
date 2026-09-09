@@ -46,7 +46,9 @@ async function childLogin(ctx: TestContext, username: string): Promise<string> {
 describe("peer requests", () => {
   let ctx: TestContext;
   beforeAll(async () => {
-    ctx = await createTestContext();
+    // This suite logs in as a child many times across its tests; raise the per-minute child
+    // login rate limit well above the default (10) so it doesn't trip on its own test traffic.
+    ctx = await createTestContext({ AUTH_RATE_LIMIT_MAX: "1000" });
   });
   afterAll(async () => {
     await ctx.close();
@@ -303,5 +305,118 @@ describe("peer requests", () => {
     )!;
     expect(stillPending.status).toBe("pending");
     expect(stillPending.payerAccountId).toBeNull();
+  });
+
+  it("lets a parent see and delete peer requests between two kids, but not delete approved ones", async () => {
+    const cookie = await devLogin(ctx, "peer-req-parent-6");
+    await createFamily(ctx, cookie);
+    const requester = await createChild(ctx, cookie, "peerreq6a");
+    const payer = await createChild(ctx, cookie, "peerreq6b");
+    const requesterChecking = requester.accounts.find((a) => a.type === "checking")!;
+    const payerChecking = payer.accounts.find((a) => a.type === "checking")!;
+    const requesterCookie = await childLogin(ctx, "peerreq6a");
+    const payerCookie = await childLogin(ctx, "peerreq6b");
+
+    await ctx.app.inject({
+      method: "POST",
+      url: "/api/transactions/deposit",
+      headers: { cookie },
+      payload: { accountId: payerChecking.id, amountMinor: 1000, category: "allowance" },
+    });
+
+    const pendingRes = await ctx.app.inject({
+      method: "POST",
+      url: "/api/peer-requests",
+      headers: { cookie: requesterCookie },
+      payload: {
+        payerUserId: payer.user.id,
+        requesterAccountId: requesterChecking.id,
+        amountMinor: 100,
+        reason: "Pending one",
+      },
+    });
+    const pending = pendingRes.json() as PeerRequest;
+
+    const approvedCreateRes = await ctx.app.inject({
+      method: "POST",
+      url: "/api/peer-requests",
+      headers: { cookie: requesterCookie },
+      payload: {
+        payerUserId: payer.user.id,
+        requesterAccountId: requesterChecking.id,
+        amountMinor: 200,
+        reason: "Will be approved",
+      },
+    });
+    const toApprove = approvedCreateRes.json() as PeerRequest;
+    const approveRes = await ctx.app.inject({
+      method: "POST",
+      url: `/api/peer-requests/${toApprove.id}/approve`,
+      headers: { cookie: payerCookie },
+      payload: { fromAccountId: payerChecking.id },
+    });
+    expect(approveRes.statusCode).toBe(200);
+
+    const parentListRes = await ctx.app.inject({
+      method: "GET",
+      url: "/api/peer-requests",
+      headers: { cookie },
+    });
+    expect(parentListRes.statusCode).toBe(200);
+    const parentItems = (parentListRes.json() as { items: PeerRequest[] }).items;
+    expect(parentItems.some((r) => r.id === pending.id)).toBe(true);
+    expect(parentItems.some((r) => r.id === toApprove.id)).toBe(true);
+
+    // Child GET still only shows their own (both requester/payer are parties on both here, so
+    // use the requester's list, which naturally includes only requests they're party to).
+    const requesterListRes = await ctx.app.inject({
+      method: "GET",
+      url: "/api/peer-requests",
+      headers: { cookie: requesterCookie },
+    });
+    const requesterItems = (requesterListRes.json() as { items: PeerRequest[] }).items;
+    expect(
+      requesterItems.every(
+        (r) => r.requesterUserId === requester.user.id || r.payerUserId === requester.user.id,
+      ),
+    ).toBe(true);
+
+    const childDeleteRes = await ctx.app.inject({
+      method: "DELETE",
+      url: `/api/peer-requests/${pending.id}`,
+      headers: { cookie: requesterCookie },
+    });
+    expect(childDeleteRes.statusCode).toBe(403);
+
+    const deleteApprovedRes = await ctx.app.inject({
+      method: "DELETE",
+      url: `/api/peer-requests/${toApprove.id}`,
+      headers: { cookie },
+    });
+    expect(deleteApprovedRes.statusCode).toBe(409);
+    expect((deleteApprovedRes.json() as { code: string }).code).toBe("REQUEST_APPROVED");
+
+    const payerBalanceRes = await ctx.app.inject({
+      method: "GET",
+      url: `/api/accounts/${payerChecking.id}`,
+      headers: { cookie: payerCookie },
+    });
+    expect((payerBalanceRes.json() as Account).balanceMinor).toBe(800);
+
+    const deletePendingRes = await ctx.app.inject({
+      method: "DELETE",
+      url: `/api/peer-requests/${pending.id}`,
+      headers: { cookie },
+    });
+    expect(deletePendingRes.statusCode).toBe(200);
+    expect((deletePendingRes.json() as { ok: boolean }).ok).toBe(true);
+
+    const afterDeleteListRes = await ctx.app.inject({
+      method: "GET",
+      url: "/api/peer-requests",
+      headers: { cookie },
+    });
+    const afterDeleteItems = (afterDeleteListRes.json() as { items: PeerRequest[] }).items;
+    expect(afterDeleteItems.some((r) => r.id === pending.id)).toBe(false);
   });
 });

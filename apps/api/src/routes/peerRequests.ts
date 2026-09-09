@@ -4,6 +4,7 @@ import {
   decideRequestBody,
   formatMoney,
   idSchema,
+  okResponse,
   paged,
   peerRequestSchema,
   requestListQuery,
@@ -12,13 +13,14 @@ import type { FastifyPluginAsync } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { forbidden } from "../lib/errors";
-import { requireChild } from "../lib/guards";
+import { requireChild, requireParent, requireUser } from "../lib/guards";
 import { audit } from "../services/audit";
 import {
   approvePeerRequest,
   cancelPeerRequest,
   createPeerRequest,
   declinePeerRequest,
+  deletePeerRequest,
   listPeerRequests,
 } from "../services/peerRequests";
 import { notify } from "../services/notify";
@@ -29,7 +31,7 @@ export const peerRequestsRoutes: FastifyPluginAsync = async (app) => {
   r.get(
     "/peer-requests",
     {
-      preHandler: [requireChild],
+      preHandler: [requireUser],
       schema: {
         tags: ["peer-requests"],
         querystring: requestListQuery,
@@ -39,10 +41,11 @@ export const peerRequestsRoutes: FastifyPluginAsync = async (app) => {
     async (request) => {
       const familyId = request.family?.id;
       if (!familyId) return { items: [], nextCursor: null };
+      const user = request.currentUser!;
       return listPeerRequests(app.db, {
         ...request.query,
         familyId,
-        userId: request.currentUser!.id,
+        userId: user.role === "child" ? user.id : undefined,
       });
     },
   );
@@ -192,6 +195,31 @@ export const peerRequestsRoutes: FastifyPluginAsync = async (app) => {
         data: { peerRequestId: peerRequest.id },
       });
       return peerRequest;
+    },
+  );
+
+  r.delete(
+    "/peer-requests/:id",
+    {
+      preHandler: [requireParent],
+      schema: {
+        tags: ["peer-requests"],
+        params: z.object({ id: idSchema }),
+        response: { 200: okResponse },
+      },
+    },
+    async (request) => {
+      if (!request.family) throw forbidden("Create or join a family first");
+      await deletePeerRequest(app.db, request.family.id, request.params.id);
+      await audit(app.db, {
+        familyId: request.family.id,
+        actorUserId: request.currentUser!.id,
+        action: "peer_request.delete",
+        entity: "peer_request",
+        entityId: request.params.id,
+        data: {},
+      });
+      return { ok: true as const };
     },
   );
 };

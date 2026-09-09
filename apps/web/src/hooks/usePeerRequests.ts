@@ -11,10 +11,11 @@ import { queryKeys } from "@/lib/queryKeys";
 
 type Page = { items: PeerRequest[]; nextCursor: string | null };
 
-export function usePeers() {
+export function usePeers(enabled = true) {
   return useQuery({
     queryKey: queryKeys.peers(),
     queryFn: () => api.get<PeerSummary[]>("/families/current/peers"),
+    enabled,
   });
 }
 
@@ -75,6 +76,14 @@ export function useDeclinePeerRequest() {
   return useMutation({
     mutationFn: ({ id, note = "" }: { id: string; note?: string }) =>
       api.post<PeerRequest>(`/peer-requests/${id}/decline`, { note }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeletePeerRequest() {
+  const invalidate = useInvalidatePeerRequests();
+  return useMutation({
+    mutationFn: (id: string) => api.del<{ ok: true }>(`/peer-requests/${id}`),
     onSuccess: invalidate,
   });
 }
