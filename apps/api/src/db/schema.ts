@@ -173,6 +173,8 @@ export const allowanceSchedules = pgTable(
     memo: text("memo").notNull().default("Allowance"),
     nextRunAt: timestamp("next_run_at", { withTimezone: true }).notNull(),
     lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+    /** Optional expiration; the allowance stops paying after this instant. Null = indefinite. */
+    endsAt: timestamp("ends_at", { withTimezone: true }),
     active: boolean("active").notNull().default(true),
     createdBy: uuid("created_by")
       .notNull()

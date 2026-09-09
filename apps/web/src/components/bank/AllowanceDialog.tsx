@@ -1,4 +1,5 @@
 import { useState } from "react";
+import dayjs from "dayjs";
 import type { Account, AllowanceFrequency, AllowanceSchedule } from "@botf/shared";
 import { minorToDecimalString } from "@botf/shared";
 import { Dialog } from "@/components/ui/Dialog";
@@ -32,6 +33,7 @@ function initialState(
     dayOfWeek: editing?.dayOfWeek ?? 0,
     dayOfMonth: editing?.dayOfMonth ?? 1,
     memo: editing?.memo ?? "Allowance",
+    endsOn: editing?.endsAt ? dayjs(editing.endsAt).format("YYYY-MM-DD") : "",
   };
 }
 
@@ -72,6 +74,8 @@ export function AllowanceDialog({ open, onClose, accounts, editing }: AllowanceD
       memo: state.memo.trim() || "Allowance",
       dayOfWeek: state.frequency === "monthly" ? undefined : state.dayOfWeek,
       dayOfMonth: state.frequency === "monthly" ? state.dayOfMonth : undefined,
+      // Pay through the end of the chosen day; null clears any existing expiration.
+      endsAt: state.endsOn ? dayjs(state.endsOn).endOf("day").toISOString() : null,
     };
 
     try {
@@ -163,6 +167,17 @@ export function AllowanceDialog({ open, onClose, accounts, editing }: AllowanceD
             </Select>
           </Field>
         )}
+        <Field
+          label="Ends on"
+          hint="Optional — for seasonal jobs like lawn care. Leave blank to keep paying indefinitely."
+        >
+          <Input
+            type="date"
+            value={state.endsOn}
+            min={dayjs().format("YYYY-MM-DD")}
+            onChange={(e) => setState((s) => ({ ...s, endsOn: e.target.value }))}
+          />
+        </Field>
         <Field label="Memo">
           <Textarea
             rows={2}

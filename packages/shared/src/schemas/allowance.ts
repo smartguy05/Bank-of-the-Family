@@ -15,6 +15,8 @@ export const allowanceScheduleSchema = z.object({
   memo: z.string(),
   nextRunAt: isoDateTime,
   lastRunAt: isoDateTime.nullable(),
+  /** Optional last day the allowance pays out (e.g. a seasonal job); null = runs indefinitely. */
+  endsAt: isoDateTime.nullable(),
   active: z.boolean(),
   createdBy: idSchema,
   createdAt: isoDateTime,
@@ -31,6 +33,8 @@ export const createAllowanceBody = z
     memo: memoSchema.default("Allowance"),
     /** Optional explicit first run; otherwise computed from frequency/day in the family timezone. */
     startAt: isoDateTime.optional(),
+    /** Optional expiration: the allowance stops paying after this instant. For seasonal jobs. */
+    endsAt: isoDateTime.nullable().optional(),
   })
   .refine(
     (b) => (b.frequency === "monthly" ? b.dayOfMonth !== undefined : b.dayOfWeek !== undefined),
@@ -45,5 +49,7 @@ export const updateAllowanceBody = z.object({
   dayOfMonth: z.number().int().min(1).max(28).optional(),
   memo: memoSchema.optional(),
   active: z.boolean().optional(),
+  /** Set to an instant to add/change the expiration, or null to clear it (runs indefinitely). */
+  endsAt: isoDateTime.nullable().optional(),
 });
 export type UpdateAllowanceBody = z.infer<typeof updateAllowanceBody>;

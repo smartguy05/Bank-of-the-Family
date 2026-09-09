@@ -1,0 +1,1 @@
+ALTER TABLE "allowance_schedules" ADD COLUMN "ends_at" timestamp with time zone;
