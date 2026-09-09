@@ -26,6 +26,7 @@ export function toAllowanceDto(row: typeof allowanceSchedules.$inferSelect): All
     memo: row.memo,
     nextRunAt: row.nextRunAt.toISOString(),
     lastRunAt: row.lastRunAt ? row.lastRunAt.toISOString() : null,
+    endsAt: row.endsAt ? row.endsAt.toISOString() : null,
     active: row.active,
     createdBy: row.createdBy,
     createdAt: row.createdAt.toISOString(),
@@ -163,6 +164,7 @@ export async function createAllowance(
       dayOfMonth: body.dayOfMonth ?? null,
       memo: body.memo,
       nextRunAt,
+      endsAt: body.endsAt ? new Date(body.endsAt) : null,
       createdBy,
     })
     .returning();
@@ -190,9 +192,16 @@ export async function updateAllowance(
       })
     : current.nextRunAt;
 
+  // `endsAt` arrives as an ISO string (or null to clear); the column wants a Date. Leaving it out
+  // of the update entirely when undefined keeps the existing expiration untouched.
+  const { endsAt, ...rest } = body;
   const [row] = await db
     .update(allowanceSchedules)
-    .set({ ...body, nextRunAt })
+    .set({
+      ...rest,
+      nextRunAt,
+      ...(endsAt !== undefined ? { endsAt: endsAt ? new Date(endsAt) : null } : {}),
+    })
     .where(eq(allowanceSchedules.id, id))
     .returning();
   return toAllowanceDto(row!);

@@ -59,7 +59,8 @@ deposit and charge, kids watch balances grow, earn interest, save toward goals, 
   ledger is never contradicted.
 - Scheduled allowance and monthly interest are posted by the in-process scheduler with idempotency keys,
   so retries never double-post. Interest = balance × annual rate / 12, posted on the 1st of each month
-  in the family's timezone.
+  in the family's timezone. An allowance can carry an optional `ends_at` (e.g. a seasonal job like lawn
+  care): once a due run falls after it, the schedule pays no further and is marked inactive.
 
 ## Notifications
 

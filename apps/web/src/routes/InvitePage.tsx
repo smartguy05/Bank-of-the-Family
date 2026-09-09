@@ -102,7 +102,7 @@ export function InvitePage() {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-900 text-white shadow-md">
             <Landmark size={28} />
           </div>
-          <h1 className="text-2xl font-semibold text-brand-900">Join {preview.familyName}</h1>
+          <h1 className="text-2xl font-semibold text-ink">Join {preview.familyName}</h1>
           <p className="text-sm text-muted">
             {preview.invitedByName} invited you
             {preview.inviteeName ? ` (${preview.inviteeName})` : ""} to co-manage the family bank.

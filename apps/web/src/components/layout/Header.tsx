@@ -5,7 +5,7 @@ export function Header({ familyName, unread }: { familyName?: string; unread?: n
   return (
     <header className="flex h-14 items-center justify-between border-b border-line bg-card px-4 sm:hidden print:hidden">
       <div>
-        <p className="text-sm font-semibold text-brand-900">Bank of the Family</p>
+        <p className="text-sm font-semibold text-ink">Bank of the Family</p>
         {familyName && <p className="text-xs text-muted leading-tight">{familyName}</p>}
       </div>
       <Link

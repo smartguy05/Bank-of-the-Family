@@ -75,7 +75,7 @@ export function Dialog({
       >
         <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
           <div>
-            <h2 id={titleId} className="text-lg font-semibold text-brand-900">
+            <h2 id={titleId} className="text-lg font-semibold text-ink">
               {title}
             </h2>
             {description && (

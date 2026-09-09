@@ -72,7 +72,7 @@ export function OnboardingPage() {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-900 text-white shadow-md">
             <Landmark size={28} />
           </div>
-          <h1 className="text-2xl font-semibold text-brand-900">Set up your family</h1>
+          <h1 className="text-2xl font-semibold text-ink">Set up your family</h1>
           <p className="text-sm text-muted">
             This creates your family&rsquo;s bank. You can invite the other parent and add kids
             next.

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Enables `dark:` utilities keyed off the `data-theme` attribute the theme switch sets on <html>. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* Design tokens: a calm, trustworthy "real bank" palette. Feature agents use these, not raw hex. */
 @theme {
   --color-brand-900: #0b1f3a;
@@ -23,6 +26,25 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --radius-card: 1rem;
+}
+
+/*
+ * Dark theme. The switch (see lib/theme.ts) resolves the user's preference to a concrete
+ * `data-theme="dark"` on <html>. We only re-map the neutral surfaces/text and status colors —
+ * the brand navy and teal accent stay put so the bank identity (account cards, primary buttons,
+ * logos) reads the same in both themes. `color-scheme` makes native controls (checkboxes, the
+ * date picker, scrollbars) render dark too.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-surface: #0b1220;
+  --color-card: #141d2f;
+  --color-ink: #e8edf6;
+  --color-muted: #9aa9c2;
+  --color-line: #27344b;
+  --color-positive: #22c55e;
+  --color-negative: #ef4444;
+  --color-warning: #f59e0b;
 }
 
 html,

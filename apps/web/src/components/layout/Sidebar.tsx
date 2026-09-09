@@ -14,7 +14,7 @@ export function Sidebar({ items, familyName }: { items: NavItem[]; familyName?: 
           <Landmark size={18} />
         </div>
         <div>
-          <p className="text-sm font-semibold leading-tight text-brand-900">Bank of the Family</p>
+          <p className="text-sm font-semibold leading-tight text-ink">Bank of the Family</p>
           {familyName && <p className="text-xs text-muted">{familyName}</p>}
         </div>
       </div>

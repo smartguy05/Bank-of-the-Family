@@ -307,6 +307,131 @@ describe("allowances API + job", () => {
     void schedule;
   });
 
+  it("stores an expiration and returns it on the schedule", async () => {
+    const cookie = await devLogin(ctx, "allow-parent-exp-1");
+    await createFamily(ctx, cookie);
+    const child = await createChild(ctx, cookie, "kidExp1");
+    const checking = child.accounts.find((a) => a.type === "checking")!;
+
+    const endsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const res = await ctx.app.inject({
+      method: "POST",
+      url: "/api/allowances",
+      headers: { cookie },
+      payload: {
+        accountId: checking.id,
+        amountMinor: 500,
+        frequency: "weekly",
+        dayOfWeek: 1,
+        endsAt,
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    const schedule = res.json() as AllowanceSchedule;
+    expect(schedule.endsAt).not.toBeNull();
+    expect(new Date(schedule.endsAt!).toISOString()).toBe(endsAt);
+
+    // PATCH can clear the expiration back to null.
+    const patchRes = await ctx.app.inject({
+      method: "PATCH",
+      url: `/api/allowances/${schedule.id}`,
+      headers: { cookie },
+      payload: { endsAt: null },
+    });
+    expect(patchRes.statusCode).toBe(200);
+    expect((patchRes.json() as AllowanceSchedule).endsAt).toBeNull();
+  });
+
+  it("does not pay a schedule whose due run is past its expiration, and retires it", async () => {
+    const cookie = await devLogin(ctx, "allow-parent-exp-2");
+    await createFamily(ctx, cookie);
+    const child = await createChild(ctx, cookie, "kidExp2");
+    const checking = child.accounts.find((a) => a.type === "checking")!;
+
+    const createRes = await ctx.app.inject({
+      method: "POST",
+      url: "/api/allowances",
+      headers: { cookie },
+      payload: {
+        accountId: checking.id,
+        amountMinor: 600,
+        frequency: "weekly",
+        dayOfWeek: 1,
+        startAt: new Date(Date.now() - 1000).toISOString(), // due now
+        endsAt: new Date(Date.now() - 2000).toISOString(), // but already expired
+      },
+    });
+    const schedule = createRes.json() as AllowanceSchedule;
+
+    await postDueAllowances(ctx.db, new Date());
+
+    const accountRes = await ctx.app.inject({
+      method: "GET",
+      url: `/api/accounts/${checking.id}`,
+      headers: { cookie },
+    });
+    expect((accountRes.json() as Account).balanceMinor).toBe(0);
+
+    const listRes = await ctx.app.inject({
+      method: "GET",
+      url: `/api/allowances?accountId=${checking.id}`,
+      headers: { cookie },
+    });
+    const [after] = listRes.json() as AllowanceSchedule[];
+    expect(after!.active).toBe(false);
+    expect(after!.lastRunAt).toBeNull();
+    void schedule;
+  });
+
+  it("pays the final due run then retires the schedule when the next run is past expiration", async () => {
+    const cookie = await devLogin(ctx, "allow-parent-exp-3");
+    await createFamily(ctx, cookie);
+    const child = await createChild(ctx, cookie, "kidExp3");
+    const checking = child.accounts.find((a) => a.type === "checking")!;
+
+    await ctx.app.inject({
+      method: "POST",
+      url: "/api/allowances",
+      headers: { cookie },
+      payload: {
+        accountId: checking.id,
+        amountMinor: 800,
+        frequency: "weekly",
+        dayOfWeek: 1,
+        startAt: new Date(Date.now() - 1000).toISOString(), // due now
+        // Expires before next week's run, so today's payout is the last one.
+        endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      },
+    });
+
+    await postDueAllowances(ctx.db, new Date());
+
+    const accountRes = await ctx.app.inject({
+      method: "GET",
+      url: `/api/accounts/${checking.id}`,
+      headers: { cookie },
+    });
+    expect((accountRes.json() as Account).balanceMinor).toBe(800);
+
+    const listRes = await ctx.app.inject({
+      method: "GET",
+      url: `/api/allowances?accountId=${checking.id}`,
+      headers: { cookie },
+    });
+    const [after] = listRes.json() as AllowanceSchedule[];
+    expect(after!.active).toBe(false);
+    expect(after!.lastRunAt).not.toBeNull();
+
+    // A second job run posts nothing more (it is retired and no longer active).
+    await postDueAllowances(ctx.db, new Date());
+    const accountRes2 = await ctx.app.inject({
+      method: "GET",
+      url: `/api/accounts/${checking.id}`,
+      headers: { cookie },
+    });
+    expect((accountRes2.json() as Account).balanceMinor).toBe(800);
+  });
+
   it("a long outage posts exactly one entry and catches nextRunAt up to the future", async () => {
     const cookie = await devLogin(ctx, "allow-parent-5");
     await createFamily(ctx, cookie);

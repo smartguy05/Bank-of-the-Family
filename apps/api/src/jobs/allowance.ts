@@ -43,6 +43,17 @@ export async function postDueAllowances(db: Db, now: Date): Promise<void> {
     if (!family) continue;
 
     const scheduledAt = schedule.nextRunAt;
+
+    // Expired schedules (e.g. a seasonal job that has ended) stop paying: retire the schedule
+    // without posting once its due run falls after the expiration instant.
+    if (schedule.endsAt && scheduledAt.getTime() > schedule.endsAt.getTime()) {
+      await db
+        .update(allowanceSchedules)
+        .set({ active: false })
+        .where(eq(allowanceSchedules.id, schedule.id));
+      continue;
+    }
+
     const row = await postEntry(db, {
       familyId: schedule.familyId,
       accountId: schedule.accountId,
@@ -73,9 +84,11 @@ export async function postDueAllowances(db: Db, now: Date): Promise<void> {
       );
     }
 
+    // If the next run would land past the expiration, this was the final payout — retire it.
+    const expired = schedule.endsAt !== null && next.getTime() > schedule.endsAt.getTime();
     await db
       .update(allowanceSchedules)
-      .set({ nextRunAt: next, lastRunAt: now })
+      .set({ nextRunAt: next, lastRunAt: now, ...(expired ? { active: false } : {}) })
       .where(eq(allowanceSchedules.id, schedule.id));
 
     const amountText = formatMoney(schedule.amountMinor, family.currencyCode, family.locale, {

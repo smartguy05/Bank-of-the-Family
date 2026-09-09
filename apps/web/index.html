@@ -7,6 +7,21 @@
     <link rel="icon" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>Bank of the Family</title>
+    <script>
+      // Apply the saved theme before first paint so there's no flash of the wrong theme.
+      (function () {
+        try {
+          var pref = localStorage.getItem("botf-theme");
+          var dark =
+            pref === "dark" ||
+            ((!pref || pref === "system") &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.dataset.theme = dark ? "dark" : "light";
+        } catch (e) {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
   </head>
   <body class="bg-surface text-ink">
     <div id="root"></div>

@@ -46,7 +46,7 @@ export function StatementView({ statement }: { statement: Statement }) {
             <Landmark size={20} />
           </div>
           <div>
-            <p className="font-semibold text-brand-900">Bank of the Family</p>
+            <p className="font-semibold text-ink">Bank of the Family</p>
             <p className="text-xs text-muted">{statement.familyName}</p>
           </div>
         </div>

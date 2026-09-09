@@ -72,7 +72,7 @@ export function LoginPage() {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-900 text-white shadow-md">
             <Landmark size={28} />
           </div>
-          <h1 className="text-2xl font-semibold text-brand-900">Bank of the Family</h1>
+          <h1 className="text-2xl font-semibold text-ink">Bank of the Family</h1>
           <p className="text-sm text-muted">Secure banking for the whole family</p>
         </div>
 
@@ -82,7 +82,7 @@ export function LoginPage() {
               type="button"
               onClick={() => setPanel("parent")}
               className={`rounded-md py-2 text-sm font-medium transition-colors ${
-                panel === "parent" ? "bg-card text-brand-900 shadow-sm" : "text-muted"
+                panel === "parent" ? "bg-card text-ink shadow-sm" : "text-muted"
               }`}
             >
               Parent
@@ -91,7 +91,7 @@ export function LoginPage() {
               type="button"
               onClick={() => setPanel("kid")}
               className={`rounded-md py-2 text-sm font-medium transition-colors ${
-                panel === "kid" ? "bg-card text-brand-900 shadow-sm" : "text-muted"
+                panel === "kid" ? "bg-card text-ink shadow-sm" : "text-muted"
               }`}
             >
               Kid

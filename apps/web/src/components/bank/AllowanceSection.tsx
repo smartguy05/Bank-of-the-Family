@@ -30,6 +30,7 @@ function AllowanceRow({
   const updateAllowance = useUpdateAllowance(schedule.id);
   const deleteAllowance = useDeleteAllowance();
   const [editing, setEditing] = useState(false);
+  const expired = schedule.endsAt !== null && dayjs(schedule.endsAt).isBefore(dayjs());
 
   async function toggleActive() {
     try {
@@ -56,21 +57,30 @@ function AllowanceRow({
             <p className="font-medium text-ink">
               <Money minor={schedule.amountMinor} />
             </p>
-            <Badge tone={schedule.active ? "positive" : "neutral"}>
-              {schedule.active ? "Active" : "Paused"}
+            <Badge tone={expired ? "neutral" : schedule.active ? "positive" : "neutral"}>
+              {expired ? "Expired" : schedule.active ? "Active" : "Paused"}
             </Badge>
           </div>
           <p className="text-sm text-muted">
             {frequencyLabel(schedule)} · {accountName}
           </p>
-          <p className="text-xs text-muted">
-            Next: {dayjs(schedule.nextRunAt).format("MMM D, YYYY")}
-          </p>
+          {expired ? (
+            <p className="text-xs text-muted">
+              Ended {dayjs(schedule.endsAt).format("MMM D, YYYY")}
+            </p>
+          ) : (
+            <p className="text-xs text-muted">
+              Next: {dayjs(schedule.nextRunAt).format("MMM D, YYYY")}
+              {schedule.endsAt && ` · Ends ${dayjs(schedule.endsAt).format("MMM D, YYYY")}`}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={() => void toggleActive()}>
-            {schedule.active ? "Pause" : "Resume"}
-          </Button>
+          {!expired && (
+            <Button variant="ghost" size="sm" onClick={() => void toggleActive()}>
+              {schedule.active ? "Pause" : "Resume"}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
