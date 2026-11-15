@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Account, TransactionCategory } from "@botf/shared";
 import {
   CATEGORY_LABELS,
@@ -16,6 +16,7 @@ import { Money } from "@/components/ui/Money";
 import { useAmountField } from "@/hooks/useAmountField";
 import { useToast } from "@/components/ui/Toast";
 import { useCharge, useDeposit, useTransfer, useWithdraw } from "@/hooks/useTransactions";
+import { useChildren } from "@/hooks/useChildren";
 
 interface BaseProps {
   open: boolean;
@@ -340,7 +341,49 @@ export function WithdrawDialog({
   );
 }
 
+/**
+ * Transfer pickers group accounts by owner when they span more than one person (a parent moving
+ * money between kids), so "Checking" / "Savings" are never ambiguous. The owner's first name is
+ * also in the option text because a closed native select shows only the option, not its group.
+ */
+function TransferAccountOptions({
+  accounts,
+  ownerNames,
+}: {
+  accounts: Account[];
+  ownerNames: Map<string, string> | null;
+}) {
+  if (!ownerNames) {
+    return accounts.map((a) => <AccountOption key={a.id} account={a} />);
+  }
+  const groups = new Map<string, Account[]>();
+  for (const a of accounts) {
+    const list = groups.get(a.ownerUserId) ?? [];
+    list.push(a);
+    groups.set(a.ownerUserId, list);
+  }
+  return [...groups].map(([ownerId, owned]) => {
+    const owner = ownerNames.get(ownerId) ?? "Other";
+    return (
+      <optgroup key={ownerId} label={owner}>
+        {owned.map((a) => (
+          <option key={a.id} value={a.id}>
+            {owner} · {a.name} ({a.type})
+          </option>
+        ))}
+      </optgroup>
+    );
+  });
+}
+
 export function TransferDialog({ open, onClose, accounts, defaultAccountId }: BaseProps) {
+  const multipleOwners = new Set(accounts.map((a) => a.ownerUserId)).size > 1;
+  // Only parents ever see accounts from more than one owner, so children never hit /children.
+  const { data: children } = useChildren(open && multipleOwners);
+  const ownerNames = useMemo(() => {
+    if (!multipleOwners || !children) return null;
+    return new Map(children.map((c) => [c.user.id, c.user.displayName.split(" ")[0] ?? ""]));
+  }, [multipleOwners, children]);
   const [chosenFrom, setFromAccountId] = useState("");
   const [chosenTo, setToAccountId] = useState("");
   const fromAccountId = chosenFrom || defaultAccountId || accounts[0]?.id || "";
@@ -388,16 +431,12 @@ export function TransferDialog({ open, onClose, accounts, defaultAccountId }: Ba
       <div className="flex flex-col gap-4">
         <Field label="From" required>
           <Select value={fromAccountId} onChange={(e) => setFromAccountId(e.target.value)}>
-            {accounts.map((a) => (
-              <AccountOption key={a.id} account={a} />
-            ))}
+            <TransferAccountOptions accounts={accounts} ownerNames={ownerNames} />
           </Select>
         </Field>
         <Field label="To" required>
           <Select value={toAccountId} onChange={(e) => setToAccountId(e.target.value)}>
-            {accounts.map((a) => (
-              <AccountOption key={a.id} account={a} />
-            ))}
+            <TransferAccountOptions accounts={accounts} ownerNames={ownerNames} />
           </Select>
         </Field>
         <Field label="Amount" error={amount.error ?? undefined} required>
